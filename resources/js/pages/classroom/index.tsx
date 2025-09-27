@@ -1,6 +1,10 @@
+import { ClassRoomCard } from '@/components/class-room-card';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { ClassRoom } from '@/types/classroom';
+import { Head, Link } from '@inertiajs/react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -9,11 +13,57 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const ClassroomIndex = () => {
+const ClassroomIndex = ({ classrooms }: { classrooms: ClassRoom[] }) => {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Classroom" />
-            <main className="p-4"></main>
+            <main className="p-4">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                    <div>
+                        <h2 className="text-xl font-semibold">Classrooms</h2>
+                    </div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:gap-2">
+                        <Link href="/classroom/create">
+                            <Button className="w-full sm:w-auto">
+                                Create New Classroom
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+
+                <div>
+                    {/* Classroom list will go here */}
+                    {classrooms.length === 0 ? (
+                        <p className="mt-4 text-sm text-muted-foreground">
+                            No classrooms available.
+                        </p>
+                    ) : (
+                        <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                            {classrooms.map((classRoom) => (
+                                <ClassRoomCard
+                                    key={classRoom.id}
+                                    classRoom={classRoom}
+                                    onJoin={(id) => {
+                                        axios
+                                            .post(`/classroom/${id}/join`)
+                                            .then((response) => {
+                                                alert(response.data.message); // or use toast notification
+                                                // Update your UI state here
+                                            })
+                                            .catch((error) => {
+                                                alert(
+                                                    error.response?.data
+                                                        ?.message ||
+                                                        'An error occurred',
+                                                );
+                                            });
+                                    }}
+                                />
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </main>
         </AppLayout>
     );
 };

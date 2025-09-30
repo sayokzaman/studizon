@@ -11,7 +11,7 @@ class ClassroomController extends Controller
     public function index()
     {
         return inertia('classroom/index', [
-            'classrooms' => Classroom::with('course', 'teacher')->get(),
+            'classrooms' => Classroom::with('course', 'teacher', 'students')->get(),
         ]);
     }
 
@@ -87,15 +87,15 @@ class ClassroomController extends Controller
 
         // 1. Check if already joined
         if ($classroom->students()->where('user_id', $user->id)->exists()) {
-            return response()->json([
+            return redirect()->back()->with([
                 'message' => 'You have already joined this class.',
                 'success' => false,
-            ], 422);
+            ]);
         }
 
         // 2. Check capacity
         if ($classroom->students()->count() >= $classroom->capacity) {
-            return response()->json([
+            return redirect()->back()->with([
                 'message' => 'This class is full.',
                 'success' => false,
             ], 422);
@@ -111,7 +111,7 @@ class ClassroomController extends Controller
         // 5. Deduct currency if needed
         // $user->decrement('credits', $classroom->cost);
 
-        return response()->json([
+        return redirect()->back()->with([
             'message' => 'You have joined the class!',
             'success' => true,
             'classroom' => $classroom->fresh('students'), // Return updated classroom data

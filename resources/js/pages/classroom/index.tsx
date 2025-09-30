@@ -3,8 +3,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { ClassRoom } from '@/types/classroom';
-import { Head, Link } from '@inertiajs/react';
-import axios from 'axios';
+import { Head, Link, useForm } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -14,6 +13,24 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const ClassroomIndex = ({ classrooms }: { classrooms: ClassRoom[] }) => {
+    const { data, setData, post } = useForm({
+        id: null as number | null,
+    });
+
+    const handleJoin = async (classroomId: number) => {
+        post('/classroom/' + classroomId + '/join', {
+            onSuccess: () => {
+                // Optionally, you can refresh the page or update the state to reflect the changes
+                // window.location.reload();
+            },
+            onError: (errors) => {
+                console.error('Failed to join classroom:', errors);
+            },
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Classroom" />
@@ -44,19 +61,8 @@ const ClassroomIndex = ({ classrooms }: { classrooms: ClassRoom[] }) => {
                                     key={classRoom.id}
                                     classRoom={classRoom}
                                     onJoin={(id) => {
-                                        axios
-                                            .post(`/classroom/${id}/join`)
-                                            .then((response) => {
-                                                alert(response.data.message); // or use toast notification
-                                                // Update your UI state here
-                                            })
-                                            .catch((error) => {
-                                                alert(
-                                                    error.response?.data
-                                                        ?.message ||
-                                                        'An error occurred',
-                                                );
-                                            });
+                                        setData('id', id);
+                                        handleJoin(id);
                                     }}
                                 />
                             ))}

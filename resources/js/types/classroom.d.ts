@@ -10,6 +10,7 @@ export interface ClassRoom {
     thumbnail_path: string | null;
     cost: number;
     capacity: number;
+    capacity_filled?: number;
     scheduled_date: string; // ISO date string
     start_time: string; // ISO time string
     end_time: string; // ISO time string
@@ -17,4 +18,5 @@ export interface ClassRoom {
     updated_at: string; // ISO date-time string
     course?: Course
     teacher?: User
+    students?: User[]
 }

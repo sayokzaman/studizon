@@ -33,11 +33,15 @@ export interface SharedData {
 export interface User {
     id: number;
     name: string;
-    credit: number;
+    department_id: number | null;
+    credits: number;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
+    courses?: Course[];
+    program?: Program;
+    department?: Department;
     created_at: string;
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...

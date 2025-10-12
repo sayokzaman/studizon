@@ -2,29 +2,31 @@ import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import {
+    Command,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { useFetchList } from '@/hooks/use-fetch-list';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Course } from '@/types/course';
 import { Head, useForm } from '@inertiajs/react';
-import axios from 'axios';
 import { format } from 'date-fns';
 import { File, Upload, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Classroom', href: '/classroom' },
@@ -32,8 +34,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const initialData = {
+    course: null as Course | null,
     course_id: null as number | null,
     topic: '',
+    join_link: '',
     description: '',
     thumbnail: null as File | null,
     cost: 0,
@@ -48,21 +52,19 @@ const CreateClassroom = () => {
     const { data, setData, post, processing, errors, reset } =
         useForm(initialData);
 
-    const [courses, setCourses] = useState<Course[]>([]);
+    const [searchCourse, setSearchCourse] = useState('');
+    const [opeCoursesPopover, setOpenCoursesPopover] = useState(false);
 
-    useEffect(() => {
-        const fetchCourses = async () => {
-            try {
-                const res = await axios.get('/get-courses');
-                setCourses(res.data);
-                console.log('Courses:', res.data);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        };
+    const widthRef = React.useRef<HTMLButtonElement>(null);
 
-        fetchCourses();
-    }, []);
+    const { data: courses, loading: courseLoading } = useFetchList<
+        Course,
+        { only_user_program: boolean }
+    >({
+        url: '/get-courses',
+        params: { only_user_program: true },
+        search: searchCourse,
+    });
 
     const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -147,35 +149,86 @@ const CreateClassroom = () => {
                     className="mx-auto mt-4 max-w-3xl space-y-6 rounded-2xl bg-card p-6 shadow"
                 >
                     {/* Select course */}
-                    <div>
-                        <label className="block text-sm font-medium">
-                            Select course
-                        </label>
-                        <Select
-                            value={data.course_id?.toString() || ''}
-                            onValueChange={(value) =>
-                                setData('course_id', Number(value))
-                            }
+                    <div className="group relative grid gap-2">
+                        <Label>Course</Label>
+                        <Popover
+                            open={opeCoursesPopover}
+                            onOpenChange={setOpenCoursesPopover}
                         >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a course" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {courses.map((course) => (
-                                    <SelectItem
-                                        key={course.id}
-                                        value={course.id.toString()}
-                                    >
-                                        <Badge className="mr-2 w-16">
-                                            {course.code}
-                                        </Badge>
-                                        {course.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="justify-start"
+                                    ref={widthRef}
+                                >
+                                    {data.course ? (
+                                        <>{data.course.name}</>
+                                    ) : (
+                                        <>Select course</>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                className="p-0"
+                                style={{
+                                    width: widthRef.current?.offsetWidth,
+                                }}
+                                align="start"
+                            >
+                                <Command
+                                    shouldFilter={false}
+                                    className="relative"
+                                >
+                                    {courseLoading && (
+                                        <Spinner className="absolute top-2.5 right-4" />
+                                    )}
+                                    <CommandInput
+                                        value={searchCourse}
+                                        onValueChange={setSearchCourse}
+                                        placeholder="Search Department..."
+                                    />
+                                    <CommandList>
+                                        <CommandGroup
+                                            className="max-h-60 overflow-y-auto"
+                                            heading="Courses"
+                                        >
+                                            {courses.map((course) => (
+                                                <CommandItem
+                                                    key={course.id}
+                                                    value={course.id.toString()}
+                                                    onSelect={(value) => {
+                                                        setData(
+                                                            'course',
+                                                            courses.find(
+                                                                (c) =>
+                                                                    c.id.toString() ===
+                                                                    value,
+                                                            ) || null,
+                                                        );
+                                                        setData(
+                                                            'course_id',
+                                                            Number(value),
+                                                        );
+                                                        setSearchCourse('');
+                                                        setOpenCoursesPopover(
+                                                            false,
+                                                        );
+                                                    }}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <Badge className="mr-2 w-16">
+                                                        {course.code}
+                                                    </Badge>
+                                                    {course.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                         <InputError
-                            message={errors.course_id}
+                            message={errors['course_id']}
                             className="text-xs"
                         />
                     </div>
@@ -234,6 +287,24 @@ const CreateClassroom = () => {
                                 className="text-xs"
                             />
                         </div>
+                    </div>
+
+                    {/* Class link */}
+                    <div>
+                        <label className="mb-1 block text-sm font-medium">
+                            Classroom link
+                        </label>
+                        <Input
+                            value={data.join_link}
+                            onChange={(e) =>
+                                setData('join_link', e.target.value)
+                            }
+                            placeholder="e.g. Zoom, Google Meet, etc."
+                        />
+                        <InputError
+                            message={errors.join_link}
+                            className="text-xs"
+                        />
                     </div>
 
                     {/* Description */}

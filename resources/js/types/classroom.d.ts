@@ -1,12 +1,14 @@
-import { User } from '@/types'
-import { Course } from '@/types/course'
+import { User } from '@/types';
+import { Course } from '@/types/course';
 
 export interface ClassRoom {
     id: number;
     course_id: number | null;
     teacher_id: number;
     topic: string;
+    join_link: string;
     description: string | null;
+    status: string;
     thumbnail_path: string | null;
     cost: number;
     capacity: number;
@@ -16,7 +18,7 @@ export interface ClassRoom {
     end_time: string; // ISO time string
     created_at: string; // ISO date-time string
     updated_at: string; // ISO date-time string
-    course?: Course
-    teacher?: User
-    students?: User[]
+    course?: Course;
+    teacher?: User;
+    students?: User[];
 }

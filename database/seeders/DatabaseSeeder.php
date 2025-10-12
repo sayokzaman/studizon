@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -13,12 +12,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory(10)->create();
+        User::factory(10)->create(
+            [
+                'credits' => 500,
+                'profile_completed' => true,
+            ]
+        );
 
         $this->call([
             AdminSeeder::class,
-            CourseSeeder::class,
-            ClassroomSeeder::class,
+            PopulateDatabaseSeeder::class,
         ]);
     }
 }

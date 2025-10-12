@@ -16,6 +16,7 @@ class Classroom extends Model
         'topic',
         'cost',
         'capacity',
+        'join_link',
         'description',
         'scheduled_date',
         'start_time',
@@ -40,7 +41,12 @@ class Classroom extends Model
 
     public function students()
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class, 'classroom_user')->withTimestamps();
+    }
+
+    public function hasStudent(User $user)
+    {
+        return $this->students->contains($user->id);
     }
 
     protected function capacityFilled(): Attribute

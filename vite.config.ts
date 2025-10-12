@@ -20,4 +20,7 @@ export default defineConfig({
     esbuild: {
         jsx: 'automatic',
     },
+    optimizeDeps: {
+        include: ['ziggy-js'],
+    },
 });

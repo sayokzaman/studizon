@@ -22,7 +22,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'credit',
+        'program_id',
+        'credits',
+        'profile_completed',
     ];
 
     /**
@@ -45,6 +47,44 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'credits' => 'integer',
+            'profile_completed' => 'boolean',
         ];
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function program()
+    {
+        return $this->belongsTo(Program::class);
+    }
+
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class, 'course_user')->withTimestamps();
+    }
+
+    public function classrooms()
+    {
+        // Through courses
+        return $this->hasManyThrough(Classroom::class, Course::class);
+    }
+
+    public function joinedClassrooms()
+    {
+        return $this->belongsToMany(Classroom::class);
+    }
+
+    public function deductCredits($amount)
+    {
+        $this->decrement('credits', $amount);
+    }
+
+    public function addCredits($amount)
+    {
+        $this->increment('credits', $amount);
     }
 }

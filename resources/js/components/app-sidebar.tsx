@@ -107,7 +107,7 @@ export function AppSidebar() {
                                     : '',
                             )}
                         >
-                            {auth.user.credit}
+                            {auth.user.credits}
                         </span>
                     </div>
                 </div>

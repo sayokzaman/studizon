@@ -14,7 +14,13 @@ import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { SharedData, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { CoinsIcon, LayoutGrid, LibraryBig, UserPlus2Icon } from 'lucide-react';
+import {
+    CoinsIcon,
+    LayoutGrid,
+    LibraryBig,
+    SquarePlay,
+    UserPlus2Icon,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -27,6 +33,11 @@ const mainNavItems: NavItem[] = [
         title: 'Classroom',
         href: '/classroom',
         icon: LibraryBig,
+    },
+    {
+        title: 'Shorts',
+        href: '/shorts',
+        icon: SquarePlay,
     },
 ];
 
@@ -82,7 +93,7 @@ export function AppSidebar() {
                         <UserPlus2Icon className="h-5 w-5 text-primary/80" />
                         <span
                             className={cn(
-                                'text-[10px] font-semibold transition-all duration-300 ease-in-out w-12 text-center',
+                                'w-12 text-center text-[10px] font-semibold transition-all duration-300 ease-in-out',
                                 state === 'collapsed'
                                     ? 'absolute -top-2 -right-1/2 translate-x-1/2 rounded-full border border-primary bg-background px-1.5 py-0.5 text-white'
                                     : '',
@@ -101,7 +112,7 @@ export function AppSidebar() {
                         <CoinsIcon className="h-5 w-5 text-yellow-400" />
                         <span
                             className={cn(
-                                'text-[10px] font-semibold transition-all duration-300 ease-in-out w-12 text-center',
+                                'w-12 text-center text-[10px] font-semibold transition-all duration-300 ease-in-out',
                                 state === 'collapsed'
                                     ? 'absolute -top-2 -right-1/2 translate-x-1/2 rounded-full border border-yellow-400 bg-background px-1.5 py-0.5 text-white'
                                     : '',

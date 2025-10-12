@@ -5,6 +5,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ProfileSetupController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\ShortController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -31,6 +32,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('classroom/{classroom}/join', [ClassroomController::class, 'join'])->name('classroom.join');
         Route::post('classroom/{classroom}/leave', [ClassroomController::class, 'leaveClass'])
             ->name('classroom.leave');
+
+        Route::get('/shorts', [ShortController::class, 'index'])->name('shorts.index');
+        Route::post('/shorts', [ShortController::class, 'store'])->name('shorts.store');
+        Route::post('/shorts/{short}/attempt', [ShortController::class, 'attempt'])->name('shorts.attempt');
+        Route::get('/shorts/create', fn () => Inertia::render('shorts/create'))
+            ->middleware(['auth', 'verified', 'completed_profile'])
+            ->name('shorts.create');
 
     });
 

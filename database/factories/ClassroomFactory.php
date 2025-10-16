@@ -24,10 +24,13 @@ class ClassroomFactory extends Factory
         $end = (clone $start)->addMinutes(rand(30, 240));
 
         return [
-            'course_id' => Course::factory(),
-            'teacher_id' => User::factory(),
+            'course_id' => Course::inRandomOrder()->first()->id,
+            'teacher_id' => User::inRandomOrder()->first()->id,
             'topic' => $this->faker->sentence(),
-            'join_link' => $this->faker->url(),
+            'room_name' => $this->faker->unique()->bothify('???-####'), // has to be unique
+            'is_live' => false,
+            'record' => false,
+            'join_link' => '',
             'description' => $this->faker->paragraph(),
             'cost' => $this->faker->numberBetween(0, 100),
             'capacity' => $this->faker->numberBetween(5, 30),

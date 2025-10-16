@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { ClassRoom } from '@/types/classroom';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     CalendarDaysIcon,
     ClockIcon,
@@ -48,6 +48,24 @@ const ClassroomShow = ({ classroom }: { classroom: ClassRoom }) => {
             onSuccess: () => {
                 // Optionally, you can refresh the page or update the state to reflect the changes
                 // window.location.reload();
+            },
+        });
+    };
+
+    const handleStartClass = () => {
+        post(route('classroom.start', classroom.id), {
+            onSuccess: () => {
+                // Optionally, you can refresh the page or update the state to reflect the changes
+                // window.location.reload();
+            },
+        });
+    };
+
+    const handleJoinClass = () => {
+        post(route('classroom.join', classroom.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                router.visit(route('classrooms.live', classroom.id));
             },
         });
     };
@@ -110,9 +128,25 @@ const ClassroomShow = ({ classroom }: { classroom: ClassRoom }) => {
                     </div>
 
                     <div className="flex gap-2">
-                        <a href={classroom.join_link} target="_blank">
+                        {/* <a href={classroom.join_link} target="_blank">
                             <Button>Join Classroom</Button>
-                        </a>
+                        </a> */}
+                        {classroom.join_link && (
+                            <a
+                                href={classroom.join_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <Button>Join Classroom</Button>
+                            </a>
+                        )}
+
+                        <Button onClick={handleStartClass}>
+                            Start Classroom
+                        </Button>
+
+                        <Button onClick={handleJoinClass}>Join Live</Button>
+
                         <Button
                             variant="destructive"
                             onClick={() => setOpenLeaveModal(true)}

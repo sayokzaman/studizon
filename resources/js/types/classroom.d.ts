@@ -6,6 +6,9 @@ export interface ClassRoom {
     course_id: number | null;
     teacher_id: number;
     topic: string;
+    room_name: string;
+    is_live: boolean;
+    record: boolean;
     join_link: string;
     description: string | null;
     status: string;

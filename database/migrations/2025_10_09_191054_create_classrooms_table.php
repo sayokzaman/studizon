@@ -16,7 +16,10 @@ return new class extends Migration
             $table->foreignId('course_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('teacher_id')->constrained('users')->cascadeOnDelete();
             $table->string('topic');
-            $table->string('join_link');
+            $table->string('room_name')->unique();
+            $table->boolean('is_live')->default(false);
+            $table->boolean('record')->default(false);
+            $table->string('join_link')->nullable();
             $table->text('description')->nullable();
             $table->string('thumbnail_path')->nullable();
             $table->unsignedInteger('cost');

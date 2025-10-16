@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Classroom;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ClassroomController extends Controller
 {
@@ -62,7 +63,7 @@ class ClassroomController extends Controller
             'topic' => 'required|string|max:255',
             'cost' => 'required|integer|min:0',
             'capacity' => 'required|integer|min:1',
-            'join_link' => 'required|url',
+            'join_link' => 'nullable|url',
             'description' => 'nullable|string',
             'thumbnail' => 'nullable|image|max:2048', // 2MB
             'scheduled_date' => 'required|date',
@@ -83,7 +84,10 @@ class ClassroomController extends Controller
             'teacher_id' => Auth::user()->id,
             'topic' => $validated['topic'],
             'description' => $validated['description'] ?? null,
-            'join_link' => $validated['join_link'],
+            'room_name' => 'cls_'.Str::ulid(),
+            'is_live' => false,
+            'record' => false,
+            'join_link' => $validated['join_link'] ?? null,
             'thumbnail_path' => $thumbnailPath,
             'cost' => $validated['cost'],
             'capacity' => $validated['capacity'],
@@ -221,6 +225,15 @@ class ClassroomController extends Controller
         return redirect()->route('classroom.index')->with([
             'message' => 'You have successfully left the class.',
             'success' => true,
+        ]);
+    }
+
+    public function live(Classroom $classroom)
+    {
+        // optional: small guard so direct URL hits get bounced
+        // (still keep the real check in token()!)
+        return inertia('classroom/live', [
+            'classroom' => $classroom->load('students', 'teacher'),
         ]);
     }
 }

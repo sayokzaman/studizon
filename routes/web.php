@@ -3,6 +3,8 @@
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\LiveClassController;
+use App\Http\Controllers\LivekitController;
 use App\Http\Controllers\ProfileSetupController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\ShortController;
@@ -12,6 +14,11 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
+
+// Route::get('/classroom/live', function () {
+//     return Inertia::render('classroom/live');
+// });
+// Route::get('/api/livekit/token', [LivekitController::class, 'token']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/setup', [ProfileSetupController::class, 'index'])->name('setup');
@@ -32,6 +39,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('classroom/{classroom}/join', [ClassroomController::class, 'join'])->name('classroom.join');
         Route::post('classroom/{classroom}/leave', [ClassroomController::class, 'leaveClass'])
             ->name('classroom.leave');
+
+        Route::post('/classrooms/{classroom}/start', [LiveClassController::class, 'start'])->name('classroom.start');
+        Route::post('/classrooms/{classroom}/end', [LiveClassController::class, 'end']);
+        Route::post('/classrooms/{classroom}/join', [LiveClassController::class, 'join'])
+            ->name('classrooms.join');
+        Route::get('/classrooms/{classroom}/live', [ClassroomController::class, 'live'])
+            ->name('classrooms.live');
+        Route::get('/classrooms/{classroom}/token', [LiveClassController::class, 'token'])->name('classroom.token');
 
         Route::get('/shorts', [ShortController::class, 'index'])->name('shorts.index');
         Route::post('/shorts', [ShortController::class, 'store'])->name('shorts.store');

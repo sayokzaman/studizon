@@ -14,15 +14,22 @@ class Classroom extends Model
         'course_id',
         'teacher_id',
         'topic',
+        'room_name',
+        'is_live',
+        'record',
+        'join_link',
         'cost',
         'capacity',
-        'join_link',
         'description',
         'scheduled_date',
         'start_time',
         'end_time',
         'status',
         'thumbnail_path',
+    ];
+
+    protected $casts = [
+        'is_live' => 'boolean',
     ];
 
     protected $appends = [
@@ -47,6 +54,11 @@ class Classroom extends Model
     public function hasStudent(User $user)
     {
         return $this->students->contains($user->id);
+    }
+
+    public function isStudent(User $user): bool
+    {
+        return $this->students()->where('user_id', $user->id)->exists();
     }
 
     protected function capacityFilled(): Attribute

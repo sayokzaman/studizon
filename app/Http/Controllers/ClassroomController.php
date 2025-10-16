@@ -17,6 +17,7 @@ class ClassroomController extends Controller
             ->whereDoesntHave('students', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })
+            ->whereNotIn('teacher_id', [$user->id])
             ->orderBy('start_time', 'desc')
             ->orderBy('created_at', 'desc')
             ->with('course', 'teacher', 'students')
@@ -27,10 +28,12 @@ class ClassroomController extends Controller
             ->with('course', 'teacher', 'students')
             ->get();
 
+        $joinedClasses = $user->joinedClassrooms->load('course', 'teacher', 'students');
+
         return inertia('classroom/index', [
             'classrooms' => $classrooms,
             'myClasses' => $myClasses,
-            'joinedClasses' => $user->joinedClassrooms->load('course', 'teacher', 'students'),
+            'joinedClasses' => $joinedClasses,
         ]);
     }
 

@@ -26,7 +26,7 @@ import { Course } from '@/types/course';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { File, Upload, X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Classroom', href: '/classroom' },
@@ -55,7 +55,7 @@ const CreateClassroom = () => {
     const [searchCourse, setSearchCourse] = useState('');
     const [opeCoursesPopover, setOpenCoursesPopover] = useState(false);
 
-    const widthRef = React.useRef<HTMLButtonElement>(null);
+    const widthRef = useRef<HTMLButtonElement>(null);
 
     const { data: courses, loading: courseLoading } = useFetchList<
         Course,

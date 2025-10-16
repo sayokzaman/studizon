@@ -36,10 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/shorts', [ShortController::class, 'index'])->name('shorts.index');
         Route::post('/shorts', [ShortController::class, 'store'])->name('shorts.store');
         Route::post('/shorts/{short}/attempt', [ShortController::class, 'attempt'])->name('shorts.attempt');
-        Route::get('/shorts/create', fn () => Inertia::render('shorts/create'))
-            ->middleware(['auth', 'verified', 'completed_profile'])
-            ->name('shorts.create');
-
+        Route::get('/shorts/create', [ShortController::class, 'create'])->name('shorts.create');
     });
 
     Route::get('get-departments', [DepartmentController::class, 'getDepartments'])->name('getDepartments');

@@ -2,37 +2,32 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SHORT_BACKGROUNDS } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
-export default function BackgroundPicker({
-    value,
-    onChange,
-}: {
+type Props = {
     value?: string | null;
     onChange: (v: string) => void;
-}) {
+};
+
+export default function BackgroundPicker({ value, onChange }: Props) {
+    const [selected, setSelected] = useState<string | null>(value ?? null);
+
     return (
         <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-                <Preset
-                    label="Solid Slate"
-                    val="solid:#0f172a"
-                    onPick={onChange}
-                />
-                <Preset
-                    label="Solid Emerald"
-                    val="solid:#065f46"
-                    onPick={onChange}
-                />
-                <Preset
-                    label="Linear Cyan→Sky"
-                    val="grad:linear:#06b6d4,#22d3ee"
-                    onPick={onChange}
-                />
-                <Preset
-                    label="Radial Indigo→Violet"
-                    val="grad:radial:#4338ca,#a78bfa"
-                    onPick={onChange}
-                />
+            <div className="flex flex-wrap gap-2">
+                {SHORT_BACKGROUNDS.map((bg) => (
+                    <Preset
+                        key={bg}
+                        val={bg}
+                        selected={selected === bg}
+                        onPick={(v) => {
+                            setSelected(v);
+                            onChange(v);
+                        }}
+                    />
+                ))}
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
@@ -55,18 +50,22 @@ export default function BackgroundPicker({
     );
 }
 
-function Preset({
-    label,
-    val,
-    onPick,
-}: {
-    label: string;
+type PresetProps = {
     val: string;
+    selected: boolean;
     onPick: (v: string) => void;
-}) {
+};
+
+function Preset({ val, onPick, selected }: PresetProps) {
     return (
-        <Button type="button" variant="secondary" onClick={() => onPick(val)}>
-            {label}
-        </Button>
+        <Button
+            className={cn(
+                'size-7 rounded-full p-0',
+                val,
+                selected && 'ring-2 ring-offset-2',
+            )}
+            type="button"
+            onClick={() => onPick(val)}
+        />
     );
 }

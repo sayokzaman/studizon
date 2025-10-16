@@ -21,13 +21,12 @@ return new class extends Migration
                 // add more when you support them:
                 'fill_blanks', 'sequence', 'rearrange', 'spot_error', ]);
             $table->string('prompt', 500);
-            $table->json('payload');   // << unified payload
+            $table->json('payload')->nullable();   // << unified payload
             $table->json('validate');  // { mode:"mcq", correctIndex:int }
 
             $table->string('background')->nullable();
             $table->unsignedSmallInteger('time_limit')->default(15);
             $table->unsignedSmallInteger('max_points')->default(1);
-            $table->enum('visibility', ['public', 'program_only'])->default('public');
             $table->json('tags')->nullable();
             $table->timestamps();
         });

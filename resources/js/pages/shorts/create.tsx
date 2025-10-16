@@ -1,10 +1,24 @@
 // resources/js/pages/shorts/Create.tsx
+import InputError from '@/components/input-error';
 import BackgroundPicker from '@/components/shorts/background-picker';
-import ShortCard from '@/components/shorts/short-card-ai';
-import TypeEditors, { EditorState } from '@/components/shorts/type-editors';
+import ShortCreateCard from '@/components/shorts/short-create-card';
+import TypeEditors from '@/components/shorts/type-editors';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Command,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import {
     Select,
     SelectContent,
@@ -12,79 +26,251 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+import { useFetchList } from '@/hooks/use-fetch-list';
 import AppLayout from '@/layouts/app-layout';
-import { Head, router } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { TYPES } from '@/lib/constants';
+import { BreadcrumbItem } from '@/types';
+import { Course } from '@/types/course';
+import { Short, ShortType, Validate } from '@/types/short';
+import { Head, useForm } from '@inertiajs/react';
+import { useRef, useState } from 'react';
+import { route } from 'ziggy-js';
 
-const TYPES = [
-    'mcq',
-    'true_false',
-    'one_word',
-    'one_number',
-    'fill_blanks',
-    'sequence',
-    'rearrange',
-    'spot_error',
-    'code_output',
-] as const;
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Shorts',
+        href: '/shorts',
+    },
+    {
+        title: 'Create',
+        href: '/shorts/create',
+    },
+];
 
-type T = (typeof TYPES)[number];
+//omit
+type ShortForm = Omit<Short, 'id' | 'created_at' | 'updated_at'> & {
+    course_id: number | null;
+};
+
+const initialState: ShortForm = {
+    course_id: null as number | null,
+    type: 'mcq' as ShortType,
+    prompt: 'Preview your prompt here',
+    payload: {
+        choices: [{ text: 'Choice 1' }, { text: 'Choice 2' }],
+    },
+    validate: {
+        mode: 'mcq',
+        correctIndex: 0,
+    },
+    time_limit: 15,
+    max_points: 10,
+    background: 'bg-linear-to-br from-indigo-500 via-purple-500 to-blue-500',
+};
 
 export default function Create() {
-    const [state, setState] = useState<EditorState>({
-        type: 'mcq',
-        prompt: '',
-        payload: { choices: [{ t: '' }, { t: '' }] },
-        validate: { mode: 'mcq', correctIndex: 0 },
+    const { data, setData, post, errors } = useForm(initialState);
+
+    const [searchCourse, setSearchCourse] = useState('');
+    const [opeCoursesPopover, setOpenCoursesPopover] = useState(false);
+    const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+
+    const widthRef = useRef<HTMLButtonElement>(null);
+
+    const { data: courses, loading: courseLoading } = useFetchList<
+        Course,
+        { only_user_program: boolean }
+    >({
+        url: '/get-courses',
+        params: { only_user_program: true },
+        search: searchCourse,
     });
-    const [background, setBackground] = useState<string>(
-        'grad:linear:#0ea5e9,#22d3ee',
-    );
-    const [timeLimit, setTimeLimit] = useState<number>(15);
-    const [maxPoints, setMaxPoints] = useState<number>(1);
-    const [visibility, setVisibility] = useState<'public' | 'program_only'>(
-        'public',
-    );
 
-    const previewItem = useMemo(
-        () => ({
-            id: 0,
-            type: state.type as any,
-            prompt: state.prompt || 'Preview your prompt here',
-            payload: state.payload,
-            validate: state.validate,
-            time_limit: timeLimit,
-            max_points: maxPoints,
-            background,
-        }),
-        [state, background, timeLimit, maxPoints],
-    );
+    const handleSubmit = () => {
+        post(route('shorts.store'));
+    };
 
-    const submit = () => {
-        router.post('/shorts', {
-            type: state.type,
-            prompt: state.prompt,
-            payload: state.payload,
-            validate: state.validate,
-            background,
-            time_limit: timeLimit,
-            max_points: maxPoints,
-            visibility,
+    const handleTypeChange = (type: ShortType) => {
+        setData({
+            ...data,
+            type,
+            payload: handlePayloadChange(type),
+            validate: handleValidationChange(type),
         });
     };
 
+    const handlePayloadChange = (type: ShortType) => {
+        switch (type) {
+            case 'mcq': {
+                return {
+                    choices: [{ text: 'Choice 1' }, { text: 'Choice 2' }],
+                };
+            }
+            case 'true_false': {
+                return undefined;
+            }
+            case 'one_word': {
+                return {
+                    placeholder: '',
+                };
+            }
+            case 'one_number': {
+                return {
+                    answer: 0,
+                };
+            }
+            case 'code_output': {
+                return {
+                    code: "print('hello world')",
+                    language: 'python',
+                };
+            }
+            default:
+                return undefined;
+        }
+    };
+
+    const handleValidationChange = (type: ShortType): Validate => {
+        switch (type) {
+            case 'mcq':
+                return {
+                    mode: 'mcq',
+                    correctIndex: 0,
+                };
+            case 'true_false':
+                return {
+                    mode: 'boolean',
+                    answer: true,
+                };
+            case 'one_word':
+                return {
+                    mode: 'text',
+                    answers: [''],
+                    caseInsensitive: false,
+                    trim: true,
+                    collapseSpaces: true,
+                };
+            case 'one_number':
+                return {
+                    mode: 'numeric',
+                    exact: 0,
+                    tolerance: 0,
+                };
+            case 'code_output':
+                return {
+                    mode: 'text',
+                    answers: [''],
+                    caseInsensitive: true,
+                    trim: true,
+                    collapseSpaces: true,
+                };
+            default:
+                return {
+                    mode: 'mcq',
+                    correctIndex: 0,
+                };
+        }
+    };
+
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Short" />
 
             <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 p-4 lg:grid-cols-2">
+                {/* Live preview */}
+                <div className="sticky top-4">
+                    <ShortCreateCard data={data} courseName={selectedCourse?.name ?? ''} />
+                </div>
+
                 <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-2">
+                        <Label>Course</Label>
+                        <Popover
+                            open={opeCoursesPopover}
+                            onOpenChange={setOpenCoursesPopover}
+                        >
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="justify-start"
+                                    ref={widthRef}
+                                >
+                                    {selectedCourse ? (
+                                        <>{selectedCourse.name}</>
+                                    ) : (
+                                        <>Select course</>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                className="p-0"
+                                style={{
+                                    width: widthRef.current?.offsetWidth,
+                                }}
+                                align="start"
+                            >
+                                <Command
+                                    shouldFilter={false}
+                                    className="relative"
+                                >
+                                    {courseLoading && (
+                                        <Spinner className="absolute top-2.5 right-4" />
+                                    )}
+                                    <CommandInput
+                                        value={searchCourse}
+                                        onValueChange={setSearchCourse}
+                                        placeholder="Search Department..."
+                                    />
+                                    <CommandList>
+                                        <CommandGroup
+                                            className="max-h-60 overflow-y-auto"
+                                            heading="Courses"
+                                        >
+                                            {courses.map((course) => (
+                                                <CommandItem
+                                                    key={course.id}
+                                                    value={course.id.toString()}
+                                                    onSelect={(value) => {
+                                                        setSelectedCourse(
+                                                            course,
+                                                        );
+                                                        setData(
+                                                            'course_id',
+                                                            Number(value),
+                                                        );
+                                                        setSearchCourse('');
+                                                        setOpenCoursesPopover(
+                                                            false,
+                                                        );
+                                                    }}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <Badge className="mr-2 w-16">
+                                                        {course.code}
+                                                    </Badge>
+                                                    {course.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+
+                        <InputError
+                            message={errors.course_id}
+                            className="text-xs"
+                        />
+                    </div>
+
                     <div className="space-y-2">
                         <Label>Type</Label>
                         <Select
-                            value={state.type}
-                            onValueChange={(v: T) =>
-                                setState({ ...state, type: v })
+                            value={data.type}
+                            onValueChange={(v) =>
+                                handleTypeChange(v as ShortType)
                             }
                         >
                             <SelectTrigger>
@@ -92,30 +278,47 @@ export default function Create() {
                             </SelectTrigger>
                             <SelectContent>
                                 {TYPES.map((t) => (
-                                    <SelectItem key={t} value={t}>
-                                        {t.replace('_', ' ')}
+                                    <SelectItem
+                                        key={t}
+                                        value={t}
+                                        className="capitalize"
+                                    >
+                                        <span className="capitalize">
+                                            {t.replace('_', ' ')}
+                                        </span>
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
+                        <InputError message={errors.type} className="text-xs" />
                     </div>
 
                     <div className="space-y-2">
                         <Label>Prompt</Label>
-                        <Input
-                            value={state.prompt}
+                        <Textarea
+                            value={data.prompt}
                             onChange={(e) =>
-                                setState({ ...state, prompt: e.target.value })
+                                setData({ ...data, prompt: e.target.value })
                             }
                             placeholder="Ask a quick question…"
                         />
+                        <InputError
+                            message={errors.prompt}
+                            className="text-xs"
+                        />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 gap-2">
                         <Label>Background</Label>
                         <BackgroundPicker
-                            value={background}
-                            onChange={setBackground}
+                            value={data.background}
+                            onChange={(v) =>
+                                setData({ ...data, background: v })
+                            }
+                        />
+                        <InputError
+                            message={errors.background}
+                            className="text-xs"
                         />
                     </div>
 
@@ -124,63 +327,58 @@ export default function Create() {
                             <Label>Time (s)</Label>
                             <Input
                                 type="number"
-                                value={timeLimit}
+                                value={data.time_limit ?? 15}
                                 onChange={(e) =>
-                                    setTimeLimit(
-                                        parseInt(e.target.value || '15', 10),
-                                    )
+                                    setData({
+                                        ...data,
+                                        time_limit: parseInt(
+                                            e.target.value || '15',
+                                            10,
+                                        ),
+                                    })
                                 }
+                            />
+                            <InputError
+                                message={errors.time_limit}
+                                className="text-xs"
                             />
                         </div>
                         <div>
                             <Label>Max Points</Label>
                             <Input
                                 type="number"
-                                value={maxPoints}
+                                value={data.max_points?.toString() ?? '0'}
                                 onChange={(e) =>
-                                    setMaxPoints(
-                                        parseInt(e.target.value || '1', 10),
-                                    )
+                                    setData({
+                                        ...data,
+                                        max_points: parseInt(
+                                            e.target.value || '0',
+                                            10,
+                                        ),
+                                    })
                                 }
                             />
-                        </div>
-                        <div>
-                            <Label>Visibility</Label>
-                            <Select
-                                value={visibility}
-                                onValueChange={(v: any) => setVisibility(v)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="public">
-                                        Public
-                                    </SelectItem>
-                                    <SelectItem value="program_only">
-                                        Program Only
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <InputError
+                                message={errors.max_points}
+                                className="text-xs"
+                            />
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <Label>Type-specific settings</Label>
                         <TypeEditors
-                            state={state}
-                            setState={(p) => setState({ ...state, ...p })}
+                            data={data}
+                            setData={setData}
+                            errors={errors}
                         />
                     </div>
 
                     <div className="pt-2">
-                        <Button onClick={submit}>Create Short</Button>
+                        <Button type="button" onClick={handleSubmit}>
+                            Create Short
+                        </Button>
                     </div>
-                </div>
-
-                {/* Live preview */}
-                <div className="sticky top-4">
-                    <ShortCard item={previewItem as any} onNext={() => {}} />
                 </div>
             </div>
         </AppLayout>

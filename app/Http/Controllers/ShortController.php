@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Short;
 use App\Models\ShortAttempt;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
+use Illuminate\Validation\Rule;
 
 class ShortController extends Controller
 {
@@ -28,9 +28,22 @@ class ShortController extends Controller
         $perPage = (int) $request->integer('perPage', 5);
         $paginator = $query->cursorPaginate($perPage);
 
-        return Inertia::render('shorts/index', [
+        return inertia('shorts/index', [
             'initial' => $paginator->items(),     // array of Short
             'cursor' => $paginator->nextCursor()?->encode(),
+        ]);
+    }
+
+    /**
+     * GET /shorts/{short}
+     * Returns a single short.
+     */
+    public function create(Request $request, Short $short)
+    {
+        $short->load('course');
+
+        return inertia('shorts/create', [
+            'short' => $short,
         ]);
     }
 
@@ -42,40 +55,122 @@ class ShortController extends Controller
     {
         $user = $request->user();
 
-        $data = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'prompt' => 'required|string|max:500',
-            'payload' => 'required|array',
-            'validate' => 'required|array',
-            'background' => 'nullable|string|max:255',
-            'time_limit' => 'nullable|integer|min:5|max:60',
-            'max_points' => 'nullable|integer|min:1|max:10',
-            'visibility' => 'nullable|in:public,program_only',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:32',
-        ]);
+        $baseRules = [
+            'course_id' => ['required', 'exists:courses,id'],
+            'type' => ['required', 'string', Rule::in([
+                'mcq', 'true_false', 'one_word', 'code_output', 'one_number',
+            ])],
+            'prompt' => ['required', 'string', 'max:500'],
+            'validate' => ['required', 'array'],
+            'background' => ['nullable', 'string', 'max:255'],
+            'time_limit' => ['nullable', 'integer', 'min:5', 'max:60'],
+            'max_points' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', 'max:32'],
+        ];
 
-        // Hardcode type for now (mcq only)
-        $type = 'mcq';
-        $this->assertTypePayload($type, $data['payload'], $data['validate']);
+        // Add type-specific payload rules dynamically
+        $type = $request->input('type');
+        $payloadRules = match ($type) {
+            'mcq' => [
+                'payload' => ['required', 'array'],
+                'payload.choices' => ['required', 'array', 'min:2', 'max:8'],
+                'payload.choices.*.img' => ['nullable', 'string', 'url'],
+                'payload.choices.*.text' => [
+                    'required',
+                    Rule::when('payload.choices.*.img',
+                        'nullable'),
+                    'string',
+                    'max:200',
+                ],
+            ],
+            'true_false' => [
+                // Default Laravel error: "The payload field is prohibited."
+                'payload' => ['prohibited'],
+            ],
+            'one_word' => [
+                'payload' => ['required', 'array'],
+                'payload.placeholder' => ['nullable', 'string', 'max:100'],
+            ],
+            'one_number' => [
+                'payload' => ['required', 'array'],
+                'payload.unit' => ['nullable', 'string', 'max:16'],
+                'payload.placeholder' => ['nullable', 'string', 'max:100'],
+            ],
+            'code_output' => [
+                'payload' => ['required', 'array'],
+                'payload.code' => ['required', 'string', 'max:10000'],
+                'payload.language' => [
+                    'nullable', 'string',
+                    Rule::in(['php', 'js', 'ts', 'python', 'java', 'c', 'cpp', 'go', 'rust']),
+                ],
+            ],
+            default => [
+                'payload' => ['nullable', 'array'],
+            ],
+        };
+
+        $validateRules = match ($type) {
+            'mcq' => [
+                'validate.mode' => ['required', 'string', Rule::in(['mcq'])],
+                'validate.correctIndex' => ['required', 'integer', 'min:0'],
+            ],
+
+            'true_false' => [
+                'validate.mode' => ['required', 'string', Rule::in(['boolean'])],
+                'validate.answer' => ['required', 'boolean'],
+            ],
+
+            // one word and code_output share the same validate rules
+            'code_output', 'one_word' => [
+                'validate.mode' => ['required', 'string', Rule::in(['text'])],
+                'validate.answers' => ['required', 'array', 'min:1'],
+                'validate.answers.*' => ['required', 'string', 'max:100'],
+                'validate.caseInsensitive' => ['nullable', 'boolean'],
+                'validate.trim' => ['nullable', 'boolean'],
+                'validate.collapseSpaces' => ['nullable', 'boolean'],
+            ],
+
+            'one_number' => [
+                'validate.mode' => ['required', 'string', Rule::in(['numeric'])],
+                'validate.exact' => ['required', 'numeric'],
+                'validate.tolerance' => ['nullable', 'numeric', 'min:0'],
+            ],
+
+            'code_output' => [
+                // code_output usually doesn't need "validate" (display-only)
+                'validate' => ['nullable', 'array'],
+            ],
+
+            default => [
+                'validate' => ['required', 'array'],
+            ],
+        };
+
+        $rules = array_merge($baseRules, $payloadRules, $validateRules);
+
+        $data = $request->validate($rules);
+        // $this->assertTypePayload($type, $data['payload'], $data['validate']);
 
         // (Optional) deduct credits here
 
-        $short = Short::create([
+        Short::create([
             'creator_id' => $user->id,
             'course_id' => $data['course_id'],
-            'type' => $type,
+            'type' => $data['type'],
             'prompt' => $data['prompt'],
-            'payload' => $data['payload'],
+            'payload' => $data['payload'] ?? null,
             'validate' => $data['validate'],
             'background' => $data['background'] ?? null,
             'time_limit' => $data['time_limit'] ?? 15,
             'max_points' => $data['max_points'] ?? 1,
-            'visibility' => $data['visibility'] ?? 'public',
-            'tags' => $data['tags'] ?? [],
+            'tags' => $data['tags'] ?? null,
         ]);
 
-        return redirect()->route('shorts.index')->with('success', 'Short created!');
+        return redirect()->route('shorts.index')->with([
+            'message' => 'Short created.',
+            'success' => true,
+        ], 201);
     }
 
     /**
@@ -157,9 +252,6 @@ class ShortController extends Controller
                         abort(422, "mcq choice #$i text is too long (max 200 chars).");
                     }
                 }
-                if (($validate['mode'] ?? null) !== 'mcq') {
-                    abort(422, 'mcq requires validate.mode="mcq".');
-                }
                 if (! isset($validate['correctIndex']) || ! is_int($validate['correctIndex'])) {
                     abort(422, 'mcq requires validate.correctIndex (integer).');
                 }
@@ -216,7 +308,7 @@ class ShortController extends Controller
      * - one_word/code_output: normalized string
      * - one_number: float
      */
-    private function evaluate(\App\Models\Short $short, $rawAnswer): array
+    private function evaluate(Short $short, $rawAnswer): array
     {
         $v = $short->validate;
 

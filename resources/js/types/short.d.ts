@@ -1,41 +1,36 @@
-interface BaseShort {
+interface Short {
     id: number;
-    creator_id: number;
+    creator_id?: number;
+    type: ShortType;
     prompt: string;
+    payload: Payload;
+    validate: Validate;
     time_limit: number;
     max_points: number;
     background?: string | null;
     creator?: User;
     course?: Course;
-    created_at: string;
-    updated_at: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
-export type Short =
-    | (BaseShort & {
-          type: 'mcq';
-          payload: MCQPayload;
-          validate: ValidateMCQ;
-      })
-    | (BaseShort & {
-          type: 'true_false';
-          validate: ValidateMCQ;
-      })
-    | (BaseShort & {
-          type: 'one_word';
-          payload: OneWordPayload;
-          validate: ValidateText;
-      })
-    | (BaseShort & {
-          type: 'code_output';
-          payload: CodeOutputPayload;
-          validate: ValidateText;
-      })
-    | (BaseShort & {
-          type: 'one_number';
-          payload: OneNumberPayload;
-          validate: ValidateNumeric;
-    })
+export type ShortType =
+    | 'mcq'
+    | 'true_false'
+    | 'one_word'
+    | 'one_number'
+    | 'fill_blanks'
+    | 'sequence'
+    | 'rearrange'
+    | 'spot_error'
+    | 'code_output';
+
+export type Payload =
+    | MCQPayload
+    | OneWordPayload
+    | CodeOutputPayload
+    | OneNumberPayload
+    | null;
 
 export type MCQChoice = {
     text?: string | null;
@@ -49,6 +44,12 @@ export type MCQPayload = {
 export type OneWordPayload = { placeholder?: string }; // optional UI hint
 export type CodeOutputPayload = { code: string; language?: string }; // display-only
 export type OneNumberPayload = { unit?: string; placeholder?: string };
+
+export type Validate =
+    | ValidateMCQ
+    | ValidateTF
+    | ValidateText
+    | ValidateNumeric;
 
 export type ValidateMCQ = { mode: 'mcq'; correctIndex: number };
 export type ValidateTF = { mode: 'boolean'; answer: boolean };

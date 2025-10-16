@@ -1,16 +1,21 @@
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-import { Short } from '@/types/short';
+import {
+    MCQPayload,
+    OneNumberPayload,
+    OneWordPayload,
+    Short,
+} from '@/types/short';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { route } from 'ziggy-js';
 
 type Props = {
-    short: Short;
+    short: Partial<Short>;
     seconds: number;
-    onNext: () => void;
+    onNext?: () => void;
 };
 
 type AttemptResp = {
@@ -65,7 +70,7 @@ export default function TypeRenderer({ short, seconds, onNext }: Props) {
 
                     // brief feedback then advance
                     setTimeout(() => {
-                        onNext();
+                        if (onNext) onNext();
                         setInTimeout(false);
                         setSelected(null);
                         setCorrect(null);
@@ -81,7 +86,7 @@ export default function TypeRenderer({ short, seconds, onNext }: Props) {
         case 'mcq':
             return (
                 <div className="z-10 grid grid-cols-2 items-center gap-2">
-                    {short.payload.choices.map((c, idx) => (
+                    {(short.payload as MCQPayload).choices.map((c, idx) => (
                         <div key={idx}>
                             {c.img ? (
                                 <div
@@ -162,11 +167,12 @@ export default function TypeRenderer({ short, seconds, onNext }: Props) {
         case 'one_word':
             return (
                 <TextAnswer
-                    short={short}
                     seconds={seconds}
-                    onNext={onNext}
                     onSubmit={submit}
-                    placeholder={short.payload?.placeholder || 'Type answer'}
+                    placeholder={
+                        (short.payload as OneWordPayload).placeholder ||
+                        'Type answer'
+                    }
                     isCorrect={isCorrect}
                     correct={correct}
                     inTimeout={inTimeout}
@@ -176,9 +182,7 @@ export default function TypeRenderer({ short, seconds, onNext }: Props) {
         case 'code_output':
             return (
                 <TextAnswer
-                    short={short}
                     seconds={seconds}
-                    onNext={onNext}
                     onSubmit={submit}
                     placeholder="Program output…"
                     isCorrect={isCorrect}
@@ -190,15 +194,13 @@ export default function TypeRenderer({ short, seconds, onNext }: Props) {
         case 'one_number':
             return (
                 <TextAnswer
-                    short={short}
                     seconds={seconds}
-                    onNext={onNext}
                     onSubmit={submit}
                     inputMode="numeric"
                     placeholder={
-                        short.payload?.placeholder ||
-                        (short.payload?.unit
-                            ? `Enter value (${short.payload.unit})`
+                        (short.payload as OneNumberPayload).placeholder ||
+                        ((short.payload as OneNumberPayload).unit
+                            ? `Enter value (${(short.payload as OneNumberPayload).unit})`
                             : 'Enter number')
                     }
                     isCorrect={isCorrect}
@@ -220,9 +222,7 @@ function TextAnswer({
     isCorrect,
     inTimeout,
 }: {
-    short: Short;
     seconds: number;
-    onNext: () => void;
     onSubmit: (answer: string) => void;
     inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
     placeholder?: string;

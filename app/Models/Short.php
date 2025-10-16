@@ -22,7 +22,6 @@ class Short extends Model
         'background',
         'time_limit',
         'max_points',
-        'visibility',
         'tags',
     ];
 

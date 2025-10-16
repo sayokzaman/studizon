@@ -5,67 +5,68 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { SharedData } from '@/types';
 import { CodeOutputPayload, Short } from '@/types/short';
-import { Link } from '@inertiajs/react';
-import { SearchIcon, Share2Icon, ThumbsUpIcon } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
+import { Share2Icon, ThumbsUpIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 type Props = {
-    short: Short;
-    seconds: number;
-    onNext: () => void;
+    data: Partial<Short>;
+    courseName: string;
 };
 
-const ShortCard = ({ short, onNext, seconds }: Props) => {
+export default function ShortCreateCard({ data, courseName }: Props) {
+    const [seconds, setSeconds] = useState(data.time_limit ?? 15);
+    useEffect(() => setSeconds(data.time_limit ?? 15), [data.time_limit]);
+    useEffect(() => {
+        const t = setInterval(
+            () => setSeconds((s) => (s > 0 ? s - 1 : 0)),
+            1000,
+        );
+        return () => clearInterval(t);
+    }, []);
+
+    const user = usePage<SharedData>().props.auth.user;
+
     return (
         <Card
             className={cn(
                 'relative h-[calc(100vh-8rem)] w-full max-w-md overflow-hidden rounded-[10px] p-4',
-                short.background,
+                data.background,
             )}
         >
-            <TimerBar seconds={seconds} total={short.time_limit ?? 15} />
-            {short.background?.startsWith('vid:') && (
-                <video
-                    className="absolute inset-0 h-full w-full object-cover"
-                    src={short.background.slice(4)}
-                    muted
-                    loop
-                    autoPlay
-                    playsInline
-                />
-            )}
-            <div className="flex justify-end">
-                <SearchIcon className="size-5" />
-            </div>
+            <TimerBar seconds={seconds} total={data.time_limit ?? 15} />
 
+            {/* prompt (+ show code snippet when code_output) */}
             <div className="flex h-full w-full items-center justify-center">
                 <div className="flex w-full flex-col items-center">
                     <h2 className="text-xl font-semibold text-white drop-shadow-sm">
-                        {short.prompt}
+                        {data.prompt || 'Preview your prompt here'}
                     </h2>
-
-                    {short.type === 'code_output' && (
-                        <pre className="mt-4 w-full overflow-auto rounded bg-black/60 p-3 text-white/90">
-                            {(short.payload as CodeOutputPayload).code}
-                        </pre>
-                    )}
+                    {data.type === 'code_output' &&
+                        (data.payload as CodeOutputPayload).code && (
+                            <pre className="mt-4 w-full overflow-auto rounded bg-black/60 p-3 text-white/90">
+                                {(data.payload as CodeOutputPayload).code}
+                            </pre>
+                        )}
                 </div>
             </div>
 
-            <div>
-                <TypeRenderer short={short} seconds={seconds} onNext={onNext} />
-            </div>
+            <TypeRenderer short={data} seconds={seconds} />
 
             <div className="flex flex-col justify-end gap-4">
                 <div className="flex items-center justify-between">
                     <div className="flex gap-2">
                         <Badge className="font-semibold opacity-90">
-                            {prettyType(short.type)}
+                            {prettyType(data.type)}
                         </Badge>
 
-                        <Badge className="font-semibold opacity-90">
-                            {short.course.name}
-                        </Badge>
+                        {courseName && (
+                            <Badge className="font-semibold opacity-90">
+                                {courseName}
+                            </Badge>
+                        )}
                     </div>
                     <span className="text-sm text-white/80">{seconds}s</span>
                 </div>
@@ -77,17 +78,13 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
                                 src="https://avatar.iran.liara.run/public"
                                 alt=""
                             />
-                            <AvatarFallback>
-                                {short.creator.name}
-                            </AvatarFallback>
+                            <AvatarFallback>'You'</AvatarFallback>
                         </Avatar>
 
                         <div className="flex flex-col">
-                            <Link className="text-sm hover:underline">
-                                {short.creator.name}
-                            </Link>
+                            <p className="text-sm hover:underline">You</p>
                             <span className="text-xs text-white/60">
-                                @{short.creator.name.split(' ')[1]}
+                                @{user.name.split(' ')[1]}
                             </span>
                         </div>
 
@@ -115,10 +112,8 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
             </div>
         </Card>
     );
-};
-
-function prettyType(t: string) {
-    return t.replace('_', ' ').replace(/\b\w/g, (s) => s.toUpperCase());
 }
 
-export default ShortCard;
+function prettyType(t: string | undefined) {
+    return t?.replace('_', ' ').replace(/\b\w/g, (s) => s.toUpperCase());
+}

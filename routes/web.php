@@ -3,11 +3,13 @@
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\LiveClassController;
 use App\Http\Controllers\LivekitController;
 use App\Http\Controllers\ProfileSetupController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\ShortController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -52,6 +54,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/shorts', [ShortController::class, 'store'])->name('shorts.store');
         Route::post('/shorts/{short}/attempt', [ShortController::class, 'attempt'])->name('shorts.attempt');
         Route::get('/shorts/create', [ShortController::class, 'create'])->name('shorts.create');
+
+        Route::post('/followers/{follow}', [FollowerController::class, 'store'])->name('followers.store');
+        Route::delete('/followers/{follow}', [FollowerController::class, 'destroy'])->name('followers.destroy');
+        Route::delete('/followers/{follow}', [FollowerController::class, 'destroy'])->name('followers.destroy');
+
+        Route::get('/people', [UserController::class, 'index'])->name('user.index');
+        Route::get('/people/{user}', [UserController::class, 'show'])->name('user.show');
     });
 
     Route::get('get-departments', [DepartmentController::class, 'getDepartments'])->name('getDepartments');

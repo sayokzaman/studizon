@@ -1,25 +1,11 @@
 import StarRating from '@/components/star-rating';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { SharedData } from '@/types';
 import { ClassRoom } from '@/types/classroom';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import {
-    CalendarIcon,
-    Clock9Icon,
-    CoinsIcon,
-    ExternalLinkIcon,
-    MinusIcon,
-    UsersIcon,
-} from 'lucide-react';
+import { CoinsIcon } from 'lucide-react';
 import React from 'react';
 import { route } from 'ziggy-js';
 
@@ -72,16 +58,51 @@ export const ClassRoomCard: React.FC<Props> = ({ classRoom }) => {
                             './thumbnail-placeholder.jpg'
                         }
                         alt={classRoom.topic}
-                        className="h-40 w-full object-cover"
+                        className="h-28 w-full object-cover"
                     />
-                    <Badge className="absolute bottom-2 left-2 z-10 font-semibold">
+                    {/* <Badge className="absolute bottom-2 left-2 z-10 font-semibold">
                         {classRoom.course ? (
                             <p>{classRoom.course.name}</p>
                         ) : (
                             'No Course'
                         )}
+                    </Badge> */}
+                    <Badge className="absolute top-2 right-2 z-10 h-fit w-fit border border-muted-foreground/80 bg-black/50 text-white">
+                        <CoinsIcon />
+                        {classRoom.cost === 0
+                            ? 'Free'
+                            : `${classRoom.cost}  Credits`}
                     </Badge>
                     <div className="absolute inset-0 bg-black/30" />
+                </div>
+
+                <div className="-mt-9 flex flex-col gap-1 px-4">
+                    <div className="flex justify-between">
+                        <div className="flex items-end gap-2">
+                            <Avatar className="size-16">
+                                <AvatarImage
+                                    src="https://github.com/shadcn.png"
+                                    alt={user.name}
+                                />
+                                <AvatarFallback>{user.name}</AvatarFallback>
+                            </Avatar>
+
+                            <Link
+                                href={route('user.show', user.id)}
+                                className="z-10 block hover:underline"
+                            >
+                                <CardTitle className="text-lg font-semibold">
+                                    {user.name}
+                                </CardTitle>
+                            </Link>
+                        </div>
+
+                        <div className="flex w-1/2 flex-col items-end">
+                            <div className="w-1/2">
+                                <StarRating rating={3.5} readonly />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <CardTitle className="px-3 pt-2 text-sm leading-6 font-semibold">
@@ -89,12 +110,15 @@ export const ClassRoomCard: React.FC<Props> = ({ classRoom }) => {
                 </CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-1 border-b px-3 pb-2">
+            {/* <CardContent className="space-y-1 border-b px-3 pb-2">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8 overflow-hidden rounded-full">
                             <AvatarImage
-                                src={classRoom.teacher?.avatar || 'https://via.placeholder.com/150'}
+                                src={
+                                    classRoom.teacher?.avatar ||
+                                    'https://via.placeholder.com/150'
+                                }
                                 alt={classRoom.teacher?.name}
                             />
 
@@ -104,7 +128,10 @@ export const ClassRoomCard: React.FC<Props> = ({ classRoom }) => {
                         </Avatar>
 
                         <div className="flex flex-col justify-center">
-                            <Link className="truncate text-xs font-semibold underline-offset-2 hover:underline">
+                            <Link
+                                href={route('user.show', classRoom.teacher?.id)}
+                                className="truncate text-xs font-semibold underline-offset-2 hover:underline"
+                            >
                                 {!isTeacher ? classRoom.teacher?.name : 'You'}
                             </Link>
 
@@ -118,9 +145,9 @@ export const ClassRoomCard: React.FC<Props> = ({ classRoom }) => {
                         <StarRating rating={3.5} readonly />
                     </div>
                 </div>
-            </CardContent>
+            </CardContent> */}
 
-            <CardFooter className="flex flex-col px-4 text-xs">
+            {/* <CardFooter className="flex flex-col px-4 text-xs">
                 <div className="grid w-full grid-cols-2 gap-2">
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <CalendarIcon className="h-4 w-4" />
@@ -206,7 +233,7 @@ export const ClassRoomCard: React.FC<Props> = ({ classRoom }) => {
                         </>
                     )}
                 </div>
-            </CardFooter>
+            </CardFooter> */}
         </Card>
     );
 };

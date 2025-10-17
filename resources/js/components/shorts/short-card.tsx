@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { CodeOutputPayload, Short } from '@/types/short';
-import { Link } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import { SearchIcon, Share2Icon, ThumbsUpIcon } from 'lucide-react';
+import { route } from 'ziggy-js';
 
 type Props = {
     short: Short;
@@ -16,6 +17,13 @@ type Props = {
 };
 
 const ShortCard = ({ short, onNext, seconds }: Props) => {
+    const { post, processing } = useForm();
+
+    const handleFollow = () => {
+        if (!short.creator_id) return;
+        post(route('followers.store', short.creator_id));
+    };
+
     return (
         <Card
             className={cn(
@@ -91,8 +99,14 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
                             </span>
                         </div>
 
-                        <Button variant="secondary" size="sm" className="ml-2">
-                            Follow
+                        <Button
+                            onClick={handleFollow}
+                            variant="secondary"
+                            size="sm"
+                            className="ml-2"
+                            disabled={processing}
+                        >
+                            {processing ? 'Following…' : 'Follow'}
                         </Button>
                     </div>
 
@@ -122,3 +136,4 @@ function prettyType(t: string) {
 }
 
 export default ShortCard;
+

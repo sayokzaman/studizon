@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -52,6 +53,8 @@ class User extends Authenticatable
         ];
     }
 
+    protected $appends = ['is_following'];
+
     public function department()
     {
         return $this->belongsTo(Department::class);
@@ -86,5 +89,27 @@ class User extends Authenticatable
     public function addCredits($amount)
     {
         $this->increment('credits', $amount);
+    }
+
+    public function followers()
+    {
+        return $this->hasMany(Follower::class, 'following_id');
+    }
+
+    public function following()
+    {
+        return $this->hasMany(Follower::class, 'follower_id');
+    }
+
+    // make an attribute is_following
+    public function getIsFollowingAttribute(): bool
+    {
+        $authUser = Auth::user();
+
+        if (!$authUser || $authUser->id === $this->id) {
+            return false;
+        }
+
+        return $authUser->following()->where('following_id', $this->id)->exists();
     }
 }

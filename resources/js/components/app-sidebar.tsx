@@ -20,6 +20,7 @@ import {
     LibraryBig,
     SquarePlay,
     UserPlus2Icon,
+    Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -38,6 +39,11 @@ const mainNavItems: NavItem[] = [
         title: 'Shorts',
         href: '/shorts',
         icon: SquarePlay,
+    },
+    {
+        title: 'People',
+        href: '/people',
+        icon: Users,
     },
 ];
 

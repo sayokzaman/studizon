@@ -23,7 +23,7 @@ import {
     VideoIcon,
     VideoOffIcon,
 } from 'lucide-react';
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 
 type Props = { classroom: ClassRoom };
@@ -88,13 +88,17 @@ export default function Live({ classroom }: Props) {
             currentClassroom.teacher,
             ...(currentClassroom.students ?? []),
         ].filter(Boolean) as Array<
-            NonNullable<ClassRoom['teacher']> | NonNullable<ClassRoom['students']>[number]
+            | NonNullable<ClassRoom['teacher']>
+            | NonNullable<ClassRoom['students']>[number]
         >;
 
         const match = candidates.find((user) => {
             if (!user) return false;
             if (String(user.id) === identity) return true;
-            if (user.email && user.email.toLowerCase() === identity.toLowerCase()) {
+            if (
+                user.email &&
+                user.email.toLowerCase() === identity.toLowerCase()
+            ) {
                 return true;
             }
             return false;
@@ -110,7 +114,7 @@ export default function Live({ classroom }: Props) {
         };
     };
 
-    const buildParticipantList = (targetRoom: Room): ParticipantInfo[] => {
+    const buildParticipantList = useCallback((targetRoom: Room): ParticipantInfo[] => {
         const list: ParticipantInfo[] = [];
 
         const getPublication = (
@@ -121,7 +125,10 @@ export default function Live({ classroom }: Props) {
                 getTrackPublication?: (
                     src: Track.Source,
                 ) => LocalTrackPublication | RemoteTrackPublication | undefined;
-                tracks?: Map<string, LocalTrackPublication | RemoteTrackPublication>;
+                tracks?: Map<
+                    string,
+                    LocalTrackPublication | RemoteTrackPublication
+                >;
             };
 
             if (
@@ -158,12 +165,17 @@ export default function Live({ classroom }: Props) {
 
         const coerceParticipantFlag = (
             participant: Participant,
-            key: 'isMicrophoneEnabled' | 'isCameraEnabled' | 'isScreenShareEnabled',
+            key:
+                | 'isMicrophoneEnabled'
+                | 'isCameraEnabled'
+                | 'isScreenShareEnabled',
         ) => {
-            const value = (participant as unknown as Record<
-                typeof key,
-                boolean | (() => boolean)
-            >)[key];
+            const value = (
+                participant as unknown as Record<
+                    typeof key,
+                    boolean | (() => boolean)
+                >
+            )[key];
             if (typeof value === 'function') {
                 try {
                     return value.call(participant);
@@ -196,9 +208,7 @@ export default function Live({ classroom }: Props) {
                 );
             const isCamActive =
                 isPublicationActive(camPublication) ||
-                Boolean(
-                    coerceParticipantFlag(participant, 'isCameraEnabled'),
-                );
+                Boolean(coerceParticipantFlag(participant, 'isCameraEnabled'));
             const isScreenActive =
                 isPublicationActive(screenPublication) ||
                 Boolean(
@@ -239,12 +249,16 @@ export default function Live({ classroom }: Props) {
               }
             | undefined
         > = [
-            (targetRoom as Partial<Room> & {
-                participants?: Map<string, Participant>;
-            }).participants,
-            (targetRoom as Partial<Room> & {
-                remoteParticipants?: Map<string, Participant>;
-            }).remoteParticipants,
+            (
+                targetRoom as Partial<Room> & {
+                    participants?: Map<string, Participant>;
+                }
+            ).participants,
+            (
+                targetRoom as Partial<Room> & {
+                    remoteParticipants?: Map<string, Participant>;
+                }
+            ).remoteParticipants,
         ];
 
         remoteMaps.forEach((collection) => {
@@ -265,7 +279,7 @@ export default function Live({ classroom }: Props) {
         });
 
         return list;
-    };
+    }, [classroom]);
 
     useEffect(() => {
         setMessages([]);
@@ -416,10 +430,7 @@ export default function Live({ classroom }: Props) {
 
             lkRoom.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
             lkRoom.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
-            lkRoom.on(
-                RoomEvent.LocalTrackPublished,
-                handleLocalTrackPublished,
-            );
+            lkRoom.on(RoomEvent.LocalTrackPublished, handleLocalTrackPublished);
             lkRoom.on(
                 RoomEvent.LocalTrackUnpublished,
                 handleLocalTrackUnpublished,
@@ -529,7 +540,7 @@ export default function Live({ classroom }: Props) {
             }
             setParticipants([]);
         };
-    }, [classroom.id]);
+    }, [classroom.id, buildParticipantList]);
 
     useEffect(() => {
         if (!chatContainerRef.current) return;
@@ -678,18 +689,6 @@ export default function Live({ classroom }: Props) {
                                     ref={containerRef}
                                     className="grid grid-cols-2 gap-2"
                                 />
-
-                                {/* Autoplay CTA */}
-                                {/* {!audioOK && (
-                                    <div className="mt-3 flex justify-center">
-                                        <Button
-                                            onClick={enableAudio}
-                                            className="h-10"
-                                        >
-                                            Click to enable sound
-                                        </Button>
-                                    </div>
-                                )} */}
                             </div>
                         </div>
 

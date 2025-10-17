@@ -27,7 +27,7 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
     return (
         <Card
             className={cn(
-                'relative h-[calc(100vh-8rem)] w-full max-w-md overflow-hidden rounded-[10px] p-4',
+                'relative h-[calc(100vh-8rem)] w-full max-w-md overflow-hidden rounded-[10px] p-4 aspect-[16/9]',
                 short.background,
             )}
         >
@@ -91,7 +91,7 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
                         </Avatar>
 
                         <div className="flex flex-col">
-                            <Link className="text-sm hover:underline">
+                            <Link href={route('user.show', short.creator_id)} className="text-sm hover:underline">
                                 {short.creator.name}
                             </Link>
                             <span className="text-xs text-white/60">

@@ -55,11 +55,6 @@ class User extends Authenticatable
 
     protected $appends = ['is_following'];
 
-    public function department()
-    {
-        return $this->belongsTo(Department::class);
-    }
-
     public function program()
     {
         return $this->belongsTo(Program::class);
@@ -72,8 +67,7 @@ class User extends Authenticatable
 
     public function classrooms()
     {
-        // Through courses
-        return $this->hasManyThrough(Classroom::class, Course::class);
+        return $this->belongsToMany(Classroom::class, 'classroom_user')->withTimestamps();
     }
 
     public function joinedClassrooms()
@@ -91,6 +85,11 @@ class User extends Authenticatable
         $this->increment('credits', $amount);
     }
 
+    public function shorts()
+    {
+        return $this->hasMany(Short::class, 'creator_id');
+    }
+
     public function followers()
     {
         return $this->hasMany(Follower::class, 'following_id');
@@ -106,7 +105,7 @@ class User extends Authenticatable
     {
         $authUser = Auth::user();
 
-        if (!$authUser || $authUser->id === $this->id) {
+        if (! $authUser || $authUser->id === $this->id) {
             return false;
         }
 

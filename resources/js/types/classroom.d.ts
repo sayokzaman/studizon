@@ -19,6 +19,8 @@ export interface ClassRoom {
     scheduled_date: string; // ISO date string
     start_time: string; // ISO time string
     end_time: string; // ISO time string
+    starts_at?: string; // ISO datetime
+    ends_at?: string; // ISO datetime
     created_at: string; // ISO date-time string
     updated_at: string; // ISO date-time string
     course?: Course;

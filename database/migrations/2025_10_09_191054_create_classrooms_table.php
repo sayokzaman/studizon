@@ -25,8 +25,8 @@ return new class extends Migration
             $table->unsignedInteger('cost');
             $table->unsignedInteger('capacity');
             $table->date('scheduled_date');
-            $table->time('start_time');
-            $table->time('end_time');
+            $table->dateTime('starts_at');
+            $table->dateTime('ends_at');
             $table->enum('status', ['scheduled', 'completed', 'cancelled', 'in_progress'])->default('scheduled');
             $table->timestamps();
         });

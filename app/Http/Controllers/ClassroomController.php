@@ -4,37 +4,149 @@ namespace App\Http\Controllers;
 
 use App\Models\Classroom;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class ClassroomController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $user = Auth::user();
+        // Do not auto-set scheduled_date; time-only filters should act on time component only.
 
-        $classrooms = Classroom::where('status', 'scheduled')
-            ->whereIn('course_id', $user->courses->pluck('id'))
-            ->whereDoesntHave('students', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
+        $query = Classroom::query()
+            ->with(['course', 'teacher', 'students'])
+            ->when($request->search, function ($q) use ($request) {
+                $q->where(function ($query) use ($request) {
+                    $query->where('topic', 'like', "%{$request->search}%")
+                        ->orWhereHas('course', function ($query) use ($request) {
+                            $query->where('name', 'like', "%{$request->search}%");
+                        });
+                });
             })
-            ->whereNotIn('teacher_id', [$user->id])
-            ->orderBy('start_time', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->with('course', 'teacher', 'students')
-            ->get()->take(5);
+            ->when($request->filled('course_ids'), function ($q) use ($request) {
+                $ids = array_filter((array) $request->input('course_ids'));
+                if (! empty($ids)) {
+                    $q->whereIn('course_id', $ids);
+                }
+            })
+            // Independent filters: scheduled_date, starts_at (>=), ends_at (<=)
+            ->when($request->filled('scheduled_date') && $request->filled('starts_at'), function ($q) use ($request) {
+                $scheduledDate = $request->input('scheduled_date');
+                $startsAtInput = trim((string) $request->input('starts_at'));
 
-        $myClasses = Classroom::where('teacher_id', $user->id)
-            ->orderBy('start_time')
-            ->with('course', 'teacher', 'students')
-            ->get();
+                // Match scheduled_date first
+                $q->whereDate('scheduled_date', $scheduledDate);
 
-        $joinedClasses = $user->joinedClassrooms->load('course', 'teacher', 'students');
+                // Detect time-only format (e.g. "22:00" or "22:00:00")
+                if (preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $startsAtInput)) {
+                    if (strlen($startsAtInput) === 5) {
+                        $startsAtInput .= ':00';
+                    }
+
+                    // Combine with scheduled date and convert to UTC (DB stores UTC)
+                    $local = Carbon::createFromFormat('Y-m-d H:i:s', "$scheduledDate $startsAtInput", config('app.timezone'));
+                    $utc = $local->clone()->setTimezone('UTC')->toDateTimeString();
+
+                    // Use full datetime comparison instead of whereTime (fixes timezone issue)
+                    return $q->where('starts_at', '>=', $utc);
+                }
+
+                // Detect full datetime input (e.g. "2025-10-18 22:00" or with seconds)
+                if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/', $startsAtInput)) {
+                    if (strlen($startsAtInput) === 16) {
+                        $startsAtInput .= ':00';
+                    }
+
+                    $local = Carbon::createFromFormat('Y-m-d H:i:s', $startsAtInput, config('app.timezone'));
+                    $utc = $local->clone()->setTimezone('UTC')->toDateTimeString();
+
+                    return $q->where('starts_at', '>=', $utc);
+                }
+
+                return $q;
+            })
+            ->when(! $request->filled('scheduled_date') && $request->filled('starts_at'), function ($q) use ($request) {
+                // No scheduled_date — assume today in app timezone
+                $scheduledDate = now(config('app.timezone'))->toDateString();
+                $q->whereDate('scheduled_date', $scheduledDate);
+
+                $startsAtInput = trim((string) $request->input('starts_at'));
+
+                if (preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $startsAtInput)) {
+                    if (strlen($startsAtInput) === 5) {
+                        $startsAtInput .= ':00';
+                    }
+
+                    $local = Carbon::createFromFormat('Y-m-d H:i:s', "$scheduledDate $startsAtInput", config('app.timezone'));
+                    $utc = $local->clone()->setTimezone('UTC')->toDateTimeString();
+
+                    return $q->where('starts_at', '>=', $utc);
+                }
+
+                if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/', $startsAtInput)) {
+                    if (strlen($startsAtInput) === 16) {
+                        $startsAtInput .= ':00';
+                    }
+
+                    $local = Carbon::createFromFormat('Y-m-d H:i:s', $startsAtInput, config('app.timezone'));
+                    $utc = $local->clone()->setTimezone('UTC')->toDateTimeString();
+
+                    return $q->where('starts_at', '>=', $utc);
+                }
+
+                return $q;
+            })
+            ->when($request->filled('ends_at'), function ($q) use ($request) {
+                $endsAt = (string) $request->input('ends_at');
+                // Time-only
+                if (preg_match('/^\d{2}:\d{2}(?::\d{2})?$/', $endsAt)) {
+                    if (strlen($endsAt) === 5) {
+                        $endsAt .= ':00';
+                    }
+
+                    return $q->whereTime('ends_at', '<=', $endsAt);
+                }
+                // Datetime
+                if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?$/', $endsAt)) {
+                    if (strlen($endsAt) === 16) {
+                        $endsAt .= ':00';
+                    }
+
+                    return $q->where('ends_at', '<=', $endsAt);
+                }
+            });
+
+        $classrooms = $query->orderByDesc('scheduled_date')
+            ->orderBy('starts_at')
+            ->paginate((int) ($request->per_page ?? 20))
+            ->withQueryString();
+
+        $user = $request->user();
+        $myClasses = $user
+            ? Classroom::with(['course', 'teacher', 'students'])
+                ->where('teacher_id', $user->id)
+                ->orderBy('scheduled_date')
+                ->orderBy('starts_at')
+                ->get()
+            : collect();
+
+        $joinedClasses = $user
+            ? $user->joinedClassrooms()->with(['course', 'teacher', 'students'])->get()
+            : collect();
 
         return inertia('classroom/index', [
             'classrooms' => $classrooms,
             'myClasses' => $myClasses,
             'joinedClasses' => $joinedClasses,
+            'filters' => [
+                'search' => (string) $request->input('search', ''),
+                'course_ids' => array_values(array_filter((array) $request->input('course_ids', []))),
+                'scheduled_date' => (string) $request->input('scheduled_date', ''),
+                'starts_at' => (string) $request->input('starts_at', ''),
+                'ends_at' => (string) $request->input('ends_at', ''),
+                'per_page' => (int) ($request->input('per_page', 20)),
+            ],
         ]);
     }
 
@@ -67,8 +179,10 @@ class ClassroomController extends Controller
             'description' => 'nullable|string',
             'thumbnail' => 'nullable|image|max:2048', // 2MB
             'scheduled_date' => 'required|date',
-            'start_time' => 'required|date_format:H:i:s',
-            'end_time' => 'required|date_format:H:i:s|after:start_time',
+            'starts_at' => 'nullable|date_format:Y-m-d H:i:s',
+            'ends_at' => 'nullable|date_format:Y-m-d H:i:s',
+            'start_time' => 'nullable|date_format:H:i:s',
+            'end_time' => 'nullable|date_format:H:i:s',
             'notes.*' => 'nullable|file|max:10240', // each note max 10MB
         ]);
 
@@ -79,6 +193,24 @@ class ClassroomController extends Controller
         }
 
         // ✅ 3. Create the classroom
+        $start = Carbon::createFromFormat('Y-m-d H:i:s', $validated['scheduled_date'].' '.$validated['start_time']);
+        $end = Carbon::createFromFormat('Y-m-d H:i:s', $validated['scheduled_date'].' '.$validated['end_time']);
+        if ($end->lessThanOrEqualTo($start)) {
+            $end->addDay();
+        }
+
+        // If explicit starts_at/ends_at were provided, prefer them
+        if (! empty($validated['starts_at']) && ! empty($validated['ends_at'])) {
+            $start = Carbon::createFromFormat('Y-m-d H:i:s', $validated['starts_at']);
+            $end = Carbon::createFromFormat('Y-m-d H:i:s', $validated['ends_at']);
+            if ($end->lessThanOrEqualTo($start)) {
+                $end->addDay();
+            }
+        }
+
+        // Normalize scheduled_date to match start date
+        $validated['scheduled_date'] = $start->toDateString();
+
         $classRoom = Classroom::create([
             'course_id' => $validated['course_id'] ?? null,
             'teacher_id' => Auth::user()->id,
@@ -92,8 +224,8 @@ class ClassroomController extends Controller
             'cost' => $validated['cost'],
             'capacity' => $validated['capacity'],
             'scheduled_date' => $validated['scheduled_date'],
-            'start_time' => $validated['start_time'],
-            'end_time' => $validated['end_time'],
+            'starts_at' => $start,
+            'ends_at' => $end,
             // status defaults to "scheduled" from migration
         ]);
 

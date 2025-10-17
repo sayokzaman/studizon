@@ -22,18 +22,22 @@ class Classroom extends Model
         'capacity',
         'description',
         'scheduled_date',
-        'start_time',
-        'end_time',
+        'starts_at',
+        'ends_at',
         'status',
         'thumbnail_path',
     ];
 
     protected $casts = [
         'is_live' => 'boolean',
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
     ];
 
     protected $appends = [
         'capacity_filled',
+        'start_time',
+        'end_time',
     ];
 
     public function course()
@@ -65,6 +69,20 @@ class Classroom extends Model
     {
         return Attribute::make(
             get: fn () => $this->students()->count(),
+        );
+    }
+
+    protected function startTime(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => optional($this->starts_at)?->format('H:i:s')
+        );
+    }
+
+    protected function endTime(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => optional($this->ends_at)?->format('H:i:s')
         );
     }
 }

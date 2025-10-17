@@ -19,10 +19,6 @@ class ClassroomFactory extends Factory
      */
     public function definition(): array
     {
-        // ensure start is in the future and end is after start
-        $start = Carbon::now()->addMinutes(rand(10, 1440)); // 10 minutes to 24 hours from now
-        $end = (clone $start)->addMinutes(rand(30, 240));
-
         return [
             'course_id' => Course::inRandomOrder()->first()->id,
             'teacher_id' => User::inRandomOrder()->first()->id,
@@ -35,8 +31,8 @@ class ClassroomFactory extends Factory
             'cost' => $this->faker->numberBetween(0, 100),
             'capacity' => $this->faker->numberBetween(5, 30),
             'scheduled_date' => $this->faker->date(),
-            'start_time' => $start->format('H:i:s'),
-            'end_time' => $end->format('H:i:s'),
+            'starts_at' => $this->faker->dateTimeThisMonth(),
+            'ends_at' => $this->faker->dateTimeThisMonth(),
             'status' => 'scheduled',
             'thumbnail_path' => null,
         ];

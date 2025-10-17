@@ -10,13 +10,15 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { User } from '@/types';
-import { Link } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import {
     Eye,
-    UserPlus,
+    UserPlusIcon,
     UserRoundCheckIcon,
     UserRoundPlusIcon,
+    UserXIcon,
 } from 'lucide-react';
 import { route } from 'ziggy-js';
 
@@ -25,6 +27,20 @@ type Props = {
 };
 
 export default function UserCard({ user }: Props) {
+    const { post, delete: destroy, processing } = useForm();
+
+    const handleFollow = (id: number) => {
+        if (user.is_following) {
+            destroy(route('followers.destroy', id), {
+                preserveScroll: true,
+            });
+        } else {
+            post(route('followers.store', id), {
+                preserveScroll: true,
+            });
+        }
+    };
+
     return (
         <Card className="w-full min-w-sm gap-3 rounded-2xl py-4 shadow-sm transition-all hover:shadow-md">
             <CardHeader className="gap-1 px-4">
@@ -97,14 +113,30 @@ export default function UserCard({ user }: Props) {
 
             <CardFooter className="grid grid-cols-2 gap-2 px-4">
                 <Button
-                    // variant={isFollowing ? 'outline' : 'default'}
-                    size="sm"
-                    className="flex-1"
-                    // onClick={onFollow}
+                    onClick={() => handleFollow(user.id)}
+                    variant={user.is_following ? 'outline' : 'default'}
                 >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    {/* {isFollowing ? 'Following' : 'Follow'} */}
-                    Follow
+                    {processing && user.is_following ? (
+                        <span className="flex items-center gap-2">
+                            <Spinner />
+                            Unfollowing...
+                        </span>
+                    ) : processing && !user.is_following ? (
+                        <span className="flex items-center gap-2">
+                            <Spinner />
+                            Following...
+                        </span>
+                    ) : user.is_following ? (
+                        <span className="flex items-center gap-2">
+                            <UserXIcon />
+                            Unfollow
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-2">
+                            <UserPlusIcon />
+                            Follow
+                        </span>
+                    )}
                 </Button>
 
                 <Button

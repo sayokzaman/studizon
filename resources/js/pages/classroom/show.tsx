@@ -13,9 +13,9 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
+import { BreadcrumbItem, SharedData } from '@/types';
 import { ClassRoom } from '@/types/classroom';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     CalendarDaysIcon,
     ClockIcon,
@@ -23,11 +23,20 @@ import {
     ExternalLinkIcon,
     FileIcon,
     GithubIcon,
+    StarIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { route } from 'ziggy-js';
 
-const ClassroomShow = ({ classroom }: { classroom: ClassRoom }) => {
+import { RatingDialog } from '@/components/rating-dialog';
+import { format } from 'date-fns';
+
+type Props = {
+    classroom: ClassRoom;
+    openRatingModal: boolean;
+};
+
+const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Classrooms',
@@ -39,9 +48,35 @@ const ClassroomShow = ({ classroom }: { classroom: ClassRoom }) => {
         },
     ];
 
+    const [openRating, setOpenRating] = useState(openRatingModal);
+
+    const user = usePage<SharedData>().props.auth.user;
+
     const { post } = useForm();
 
     const [openLeaveModal, setOpenLeaveModal] = useState(false);
+
+    const startsAtDate = useMemo(() => {
+        return classroom.starts_at
+            ? new Date(
+                  new Date(classroom.starts_at).getTime() - 6 * 60 * 60 * 1000,
+              )
+            : null;
+    }, [classroom.starts_at]);
+
+    const [hasStarted, setHasStarted] = useState(
+        startsAtDate ? startsAtDate.getTime() <= Date.now() : false,
+    );
+
+    useEffect(() => {
+        if (!startsAtDate) return;
+
+        const interval = setInterval(() => {
+            setHasStarted(startsAtDate.getTime() <= Date.now());
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [startsAtDate]);
 
     const handleLeave = () => {
         post(route('classroom.leave', classroom.id), {
@@ -73,35 +108,38 @@ const ClassroomShow = ({ classroom }: { classroom: ClassRoom }) => {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Classroom - ${classroom.topic}`} />
-
             <div className="relative border-b">
                 <img
                     src={
-                        classroom.thumbnail_path || '/thumbnail-placeholder.jpg'
+                        (classroom.thumbnail_path &&
+                            `/${classroom.thumbnail_path}`) ||
+                        '/thumbnail-placeholder.jpg'
                     }
                     alt={classroom?.topic}
                     className="absolute inset-0 h-full w-full object-cover"
                 />
 
-                <div className="flex h-72 flex-col justify-end bg-accent/30 px-16 py-6 backdrop-blur-xs">
-                    <h3 className="flex items-center gap-2 text-xl font-semibold">
-                        <Badge className="font-semibold tracking-wide">
-                            {classroom.course?.code}
-                        </Badge>{' '}
-                        <span className="text-foreground/80">
-                            {classroom.course?.name}
-                        </span>
-                    </h3>
-                    <h1 className="text-3xl font-semibold">
-                        {classroom.topic}
-                    </h1>
-                    <p className="text-sm text-foreground/80">
-                        {classroom.course?.program?.name}
-                    </p>
+                <div className="flex h-72 flex-col items-center justify-end bg-accent/30 px-16 py-6 backdrop-blur-xs">
+                    <div className="w-full max-w-7xl">
+                        <h3 className="flex items-center gap-2 text-xl font-semibold">
+                            <Badge className="font-semibold tracking-wide">
+                                {classroom.course?.code}
+                            </Badge>{' '}
+                            <span className="text-foreground/80">
+                                {classroom.course?.name}
+                            </span>
+                        </h3>
+                        <h1 className="text-3xl font-semibold">
+                            {classroom.topic}
+                        </h1>
+                        <p className="text-sm text-foreground/80">
+                            {classroom.course?.program?.name}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <main className="px-16 py-6">
+            <main className="mx-auto w-full max-w-7xl px-6 py-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <Avatar className="h-20 w-20">
@@ -128,31 +166,74 @@ const ClassroomShow = ({ classroom }: { classroom: ClassRoom }) => {
                     </div>
 
                     <div className="flex gap-2">
-                        {/* <a href={classroom.join_link} target="_blank">
-                            <Button>Join Classroom</Button>
-                        </a> */}
-                        {classroom.join_link && (
-                            <a
-                                href={classroom.join_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                <Button>Join Classroom</Button>
-                            </a>
+                        {classroom.status !== 'completed' ? (
+                            <>
+                                {classroom.join_link && (
+                                    <a
+                                        href={classroom.join_link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <Button>Join Classroom</Button>
+                                    </a>
+                                )}
+
+                                {startsAtDate ? (
+                                    hasStarted ? (
+                                        !classroom.is_live ? (
+                                            classroom.teacher_id === user.id ? (
+                                                <Button
+                                                    onClick={handleStartClass}
+                                                >
+                                                    Start Classroom
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant={'outline'}
+                                                    disabled
+                                                >
+                                                    Wait for the instructor to
+                                                    start
+                                                </Button>
+                                            )
+                                        ) : (
+                                            <Button onClick={handleJoinClass}>
+                                                Join Live
+                                            </Button>
+                                        )
+                                    ) : (
+                                        <Button disabled variant="secondary">
+                                            Scheduled for{' '}
+                                            {format(startsAtDate, 'p, PPP')}
+                                        </Button>
+                                    )
+                                ) : (
+                                    <Button disabled variant="secondary">
+                                        No start time
+                                    </Button>
+                                )}
+
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => setOpenLeaveModal(true)}
+                                >
+                                    Leave Classroom
+                                </Button>
+                            </>
+                        ) : !classroom.is_rated ? (
+                            classroom.teacher_id !== user.id ? (
+                                <>
+                                    <Button onClick={() => setOpenRating(true)}>
+                                        <StarIcon className="h-4 w-4" />
+                                        Rate Instructor
+                                    </Button>
+                                </>
+                            ) : null
+                        ) : (
+                            <Button variant="outline" disabled>
+                                This Class has ended
+                            </Button>
                         )}
-
-                        <Button onClick={handleStartClass}>
-                            Start Classroom
-                        </Button>
-
-                        <Button onClick={handleJoinClass}>Join Live</Button>
-
-                        <Button
-                            variant="destructive"
-                            onClick={() => setOpenLeaveModal(true)}
-                        >
-                            Leave Classroom
-                        </Button>
                     </div>
                 </div>
 
@@ -200,21 +281,18 @@ const ClassroomShow = ({ classroom }: { classroom: ClassRoom }) => {
                             Class Time
                         </p>
                         <p className="text-2xl font-semibold">
-                            {classroom.start_time
-                                .split(':')
-                                .slice(0, 2)
-                                .join(':')}{' '}
-                            -{' '}
-                            {classroom.end_time
-                                .split(':')
-                                .slice(0, 2)
-                                .join(':')}
+                            {classroom.starts_at?.split('T')[1].slice(0, 5)} -
+                            {classroom.ends_at?.split('T')[1].slice(0, 5)}
                         </p>
                         <p className="text-sm text-muted-foreground">
                             Starts in
                         </p>
                         <Countdown
-                            startTime={classroom.start_time}
+                            startTime={
+                                classroom.starts_at
+                                    ?.split('T')[1]
+                                    .slice(0, 7) || '00:00:00'
+                            }
                             className="text-lg font-semibold"
                         />
                     </div>
@@ -378,6 +456,12 @@ const ClassroomShow = ({ classroom }: { classroom: ClassRoom }) => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <RatingDialog
+                classroom={classroom}
+                openRatingModal={openRating}
+                setOpenRatingModal={setOpenRating}
+            />
         </AppLayout>
     );
 };

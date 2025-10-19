@@ -2,9 +2,10 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Toaster } from '@/components/ui/sonner';
 import { Spinner } from '@/components/ui/spinner';
 import { ClassRoom } from '@/types/classroom';
-import { router } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import {
     LocalTrackPublication,
     Participant,
@@ -23,7 +24,16 @@ import {
     VideoIcon,
     VideoOffIcon,
 } from 'lucide-react';
-import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import {
+    ChangeEvent,
+    FormEvent,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
+import { toast } from 'sonner';
 import { route } from 'ziggy-js';
 
 type Props = { classroom: ClassRoom };
@@ -59,6 +69,25 @@ export default function Live({ classroom }: Props) {
     const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
     const chatContainerRef = useRef<HTMLDivElement>(null);
+
+    // Warn toast time: ends_at - 6h - 2m
+    const warnsAt = useMemo(() => {
+        return classroom.ends_at
+            ? new Date(
+                  new Date(classroom.ends_at).getTime() -
+                      6 * 60 * 60 * 1000 -
+                      2 * 60 * 1000,
+              )
+            : null;
+    }, [classroom.ends_at]);
+
+    const endsAt = useMemo(() => {
+        return classroom.ends_at
+            ? new Date(
+                  new Date(classroom.ends_at).getTime() - 6 * 60 * 60 * 1000,
+              )
+            : null;
+    }, [classroom.ends_at]);
 
     const resolveParticipantContact = (
         participant: Participant,
@@ -114,172 +143,200 @@ export default function Live({ classroom }: Props) {
         };
     };
 
-    const buildParticipantList = useCallback((targetRoom: Room): ParticipantInfo[] => {
-        const list: ParticipantInfo[] = [];
+    const buildParticipantList = useCallback(
+        (targetRoom: Room): ParticipantInfo[] => {
+            const list: ParticipantInfo[] = [];
 
-        const getPublication = (
-            participant: Participant,
-            source: Track.Source,
-        ) => {
-            const participantWithGetter = participant as Participant & {
-                getTrackPublication?: (
-                    src: Track.Source,
-                ) => LocalTrackPublication | RemoteTrackPublication | undefined;
-                tracks?: Map<
-                    string,
-                    LocalTrackPublication | RemoteTrackPublication
-                >;
+            const getPublication = (
+                participant: Participant,
+                source: Track.Source,
+            ) => {
+                const participantWithGetter = participant as Participant & {
+                    getTrackPublication?: (
+                        src: Track.Source,
+                    ) =>
+                        | LocalTrackPublication
+                        | RemoteTrackPublication
+                        | undefined;
+                    tracks?: Map<
+                        string,
+                        LocalTrackPublication | RemoteTrackPublication
+                    >;
+                };
+
+                if (
+                    typeof participantWithGetter.getTrackPublication ===
+                    'function'
+                ) {
+                    return participantWithGetter.getTrackPublication(source);
+                }
+
+                const tracksMap = participantWithGetter.tracks;
+                if (tracksMap instanceof Map) {
+                    for (const publication of tracksMap.values()) {
+                        if (publication.source === source) return publication;
+                    }
+                }
+                return undefined;
             };
 
-            if (
-                typeof participantWithGetter.getTrackPublication === 'function'
-            ) {
-                return participantWithGetter.getTrackPublication(source);
-            }
-
-            const tracksMap = participantWithGetter.tracks;
-            if (tracksMap instanceof Map) {
-                for (const publication of tracksMap.values()) {
-                    if (publication.source === source) return publication;
-                }
-            }
-            return undefined;
-        };
-
-        const isPublicationActive = (
-            publication:
-                | LocalTrackPublication
-                | RemoteTrackPublication
-                | undefined,
-        ) => {
-            if (!publication) return false;
-            if ('isMuted' in publication && publication.isMuted) return false;
-            if ('isSubscribed' in publication && !publication.isSubscribed) {
-                return false;
-            }
-            const track = publication.track;
-            if (!track) return false;
-            if ('isMuted' in track && track.isMuted) return false;
-            return true;
-        };
-
-        const coerceParticipantFlag = (
-            participant: Participant,
-            key:
-                | 'isMicrophoneEnabled'
-                | 'isCameraEnabled'
-                | 'isScreenShareEnabled',
-        ) => {
-            const value = (
-                participant as unknown as Record<
-                    typeof key,
-                    boolean | (() => boolean)
-                >
-            )[key];
-            if (typeof value === 'function') {
-                try {
-                    return value.call(participant);
-                } catch {
+            const isPublicationActive = (
+                publication:
+                    | LocalTrackPublication
+                    | RemoteTrackPublication
+                    | undefined,
+            ) => {
+                if (!publication) return false;
+                if ('isMuted' in publication && publication.isMuted)
+                    return false;
+                if (
+                    'isSubscribed' in publication &&
+                    !publication.isSubscribed
+                ) {
                     return false;
                 }
-            }
-            return Boolean(value);
-        };
-
-        const toInfo = (participant: Participant, isLocal: boolean) => {
-            const contact = resolveParticipantContact(participant, classroom);
-            const micPublication = getPublication(
-                participant,
-                Track.Source.Microphone,
-            );
-            const camPublication = getPublication(
-                participant,
-                Track.Source.Camera,
-            );
-            const screenPublication = getPublication(
-                participant,
-                Track.Source.ScreenShare,
-            );
-
-            const isMicActive =
-                isPublicationActive(micPublication) ||
-                Boolean(
-                    coerceParticipantFlag(participant, 'isMicrophoneEnabled'),
-                );
-            const isCamActive =
-                isPublicationActive(camPublication) ||
-                Boolean(coerceParticipantFlag(participant, 'isCameraEnabled'));
-            const isScreenActive =
-                isPublicationActive(screenPublication) ||
-                Boolean(
-                    coerceParticipantFlag(participant, 'isScreenShareEnabled'),
-                );
-
-            return {
-                sid: participant.sid ?? participant.identity,
-                identity: participant.identity,
-                name: contact.name,
-                email: contact.email,
-                isLocal,
-                isMicEnabled: isMicActive,
-                isCamEnabled: isCamActive,
-                isScreenSharing: isScreenActive,
+                const track = publication.track;
+                if (!track) return false;
+                if ('isMuted' in track && track.isMuted) return false;
+                return true;
             };
-        };
 
-        const localParticipant = targetRoom.localParticipant;
-        if (localParticipant) {
-            list.push(toInfo(localParticipant, true));
-        }
-
-        const seen = new Set<string>();
-        const appendRemote = (participant: Participant | undefined) => {
-            if (!participant) return;
-            const key = participant.sid || participant.identity;
-            if (seen.has(key)) return;
-            seen.add(key);
-            list.push(toInfo(participant, false));
-        };
-
-        const remoteMaps: Array<
-            | Map<string, Participant>
-            | Participant[]
-            | {
-                  forEach?: (cb: (participant: Participant) => void) => void;
-              }
-            | undefined
-        > = [
-            (
-                targetRoom as Partial<Room> & {
-                    participants?: Map<string, Participant>;
+            const coerceParticipantFlag = (
+                participant: Participant,
+                key:
+                    | 'isMicrophoneEnabled'
+                    | 'isCameraEnabled'
+                    | 'isScreenShareEnabled',
+            ) => {
+                const value = (
+                    participant as unknown as Record<
+                        typeof key,
+                        boolean | (() => boolean)
+                    >
+                )[key];
+                if (typeof value === 'function') {
+                    try {
+                        return value.call(participant);
+                    } catch {
+                        return false;
+                    }
                 }
-            ).participants,
-            (
-                targetRoom as Partial<Room> & {
-                    remoteParticipants?: Map<string, Participant>;
-                }
-            ).remoteParticipants,
-        ];
+                return Boolean(value);
+            };
 
-        remoteMaps.forEach((collection) => {
-            if (!collection) return;
-            if (collection instanceof Map) {
-                collection.forEach((participant) => appendRemote(participant));
-                return;
-            }
-            if (Array.isArray(collection)) {
-                collection.forEach((participant) => appendRemote(participant));
-                return;
-            }
-            if (typeof collection.forEach === 'function') {
-                collection.forEach((participant: Participant) =>
-                    appendRemote(participant),
+            const toInfo = (participant: Participant, isLocal: boolean) => {
+                const contact = resolveParticipantContact(
+                    participant,
+                    classroom,
                 );
-            }
-        });
+                const micPublication = getPublication(
+                    participant,
+                    Track.Source.Microphone,
+                );
+                const camPublication = getPublication(
+                    participant,
+                    Track.Source.Camera,
+                );
+                const screenPublication = getPublication(
+                    participant,
+                    Track.Source.ScreenShare,
+                );
 
-        return list;
-    }, [classroom]);
+                const isMicActive =
+                    isPublicationActive(micPublication) ||
+                    Boolean(
+                        coerceParticipantFlag(
+                            participant,
+                            'isMicrophoneEnabled',
+                        ),
+                    );
+                const isCamActive =
+                    isPublicationActive(camPublication) ||
+                    Boolean(
+                        coerceParticipantFlag(participant, 'isCameraEnabled'),
+                    );
+                const isScreenActive =
+                    isPublicationActive(screenPublication) ||
+                    Boolean(
+                        coerceParticipantFlag(
+                            participant,
+                            'isScreenShareEnabled',
+                        ),
+                    );
+
+                return {
+                    sid: participant.sid ?? participant.identity,
+                    identity: participant.identity,
+                    name: contact.name,
+                    email: contact.email,
+                    isLocal,
+                    isMicEnabled: isMicActive,
+                    isCamEnabled: isCamActive,
+                    isScreenSharing: isScreenActive,
+                };
+            };
+
+            const localParticipant = targetRoom.localParticipant;
+            if (localParticipant) {
+                list.push(toInfo(localParticipant, true));
+            }
+
+            const seen = new Set<string>();
+            const appendRemote = (participant: Participant | undefined) => {
+                if (!participant) return;
+                const key = participant.sid || participant.identity;
+                if (seen.has(key)) return;
+                seen.add(key);
+                list.push(toInfo(participant, false));
+            };
+
+            const remoteMaps: Array<
+                | Map<string, Participant>
+                | Participant[]
+                | {
+                      forEach?: (
+                          cb: (participant: Participant) => void,
+                      ) => void;
+                  }
+                | undefined
+            > = [
+                (
+                    targetRoom as Partial<Room> & {
+                        participants?: Map<string, Participant>;
+                    }
+                ).participants,
+                (
+                    targetRoom as Partial<Room> & {
+                        remoteParticipants?: Map<string, Participant>;
+                    }
+                ).remoteParticipants,
+            ];
+
+            remoteMaps.forEach((collection) => {
+                if (!collection) return;
+                if (collection instanceof Map) {
+                    collection.forEach((participant) =>
+                        appendRemote(participant),
+                    );
+                    return;
+                }
+                if (Array.isArray(collection)) {
+                    collection.forEach((participant) =>
+                        appendRemote(participant),
+                    );
+                    return;
+                }
+                if (typeof collection.forEach === 'function') {
+                    collection.forEach((participant: Participant) =>
+                        appendRemote(participant),
+                    );
+                }
+            });
+
+            return list;
+        },
+        [classroom],
+    );
 
     useEffect(() => {
         setMessages([]);
@@ -549,6 +606,54 @@ export default function Live({ classroom }: Props) {
         });
     }, [messages]);
 
+    const handleDisconnect = useCallback(async () => {
+        await room?.disconnect();
+        setJoined(false);
+        setRoom(null);
+        setIsMicEnabled(false);
+        setIsCamEnabled(false);
+        setIsScreenSharing(false);
+        setMessages([]);
+        setParticipants([]);
+    }, [room]);
+
+    // Toast: warn when class is about to end (based on classroom.ends_at)
+    useEffect(() => {
+        if (!warnsAt) return;
+
+        const interval = window.setInterval(() => {
+            if (warnsAt.getTime() <= Date.now()) {
+                console.log('Class is about to end');
+                toast('Class is about to end', {
+                    duration: 3000,
+                    description: 'The class will end soon.',
+                });
+                clearInterval(interval);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [warnsAt]);
+
+    const { post } = useForm();
+
+    useEffect(() => {
+        if (!endsAt) return;
+
+        const interval = window.setInterval(() => {
+            if (
+                classroom.status !== 'completed' &&
+                endsAt.getTime() <= Date.now()
+            ) {
+                handleDisconnect();
+                post(route('classroom.end', classroom.id));
+                clearInterval(interval);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [endsAt, post, classroom, handleDisconnect]);
+
     const toggleMic = async () => {
         if (!room) return;
         const next = !isMicEnabled;
@@ -645,25 +750,18 @@ export default function Live({ classroom }: Props) {
         }
     };
 
-    const leave = async () => {
-        await room?.disconnect();
-        setJoined(false);
-        setRoom(null);
-        setIsMicEnabled(false);
-        setIsCamEnabled(false);
-        setIsScreenSharing(false);
-        setMessages([]);
-        setParticipants([]);
+    const leave = () => {
+        handleDisconnect();
         router.visit(route('classroom.show', classroom.id));
     };
 
     return (
-        <div className="h-screen w-screen">
+        <div className="h-screen w-screen bg-muted/20">
             {joined ? (
                 <div className="flex h-full w-full flex-col justify-between gap-4 p-4">
                     <div className="flex h-full gap-4">
                         {/* Main video area */}
-                        <div className="h-full w-9/12 rounded-lg border p-4">
+                        <div className="h-full w-9/12 rounded-lg border bg-card p-4">
                             <div className="flex flex-col gap-1 border-b pb-2.5">
                                 <p className="text-lg font-bold">
                                     {classroom.topic}
@@ -694,7 +792,7 @@ export default function Live({ classroom }: Props) {
 
                         {/* Right column */}
                         <div className="flex h-full w-3/12 flex-col gap-4">
-                            <div className="h-8/12 rounded-lg border p-4">
+                            <div className="h-8/12 rounded-lg border bg-card p-4">
                                 <div className="text-md flex items-center gap-1 border-b pb-2.5 font-bold">
                                     Participants{' '}
                                     <span className="h-4 w-4 rounded-full bg-amber-600 text-center text-xs text-secondary">
@@ -775,7 +873,7 @@ export default function Live({ classroom }: Props) {
                                 </div>
                             </div>
 
-                            <div className="flex h-4/12 flex-col rounded-lg border p-4">
+                            <div className="flex h-4/12 flex-col rounded-lg border bg-card p-4">
                                 <div className="text-md flex items-center gap-1 border-b pb-2.5 font-bold">
                                     Messages
                                 </div>
@@ -827,12 +925,11 @@ export default function Live({ classroom }: Props) {
                                         onChange={handleChatInputChange}
                                         placeholder="Type a message..."
                                         autoComplete="off"
+                                        className="bg-background/80"
                                     />
                                     <Button
                                         type="submit"
-                                        variant="secondary"
                                         className="flex items-center justify-center"
-                                        disabled={!chatInput.trim()}
                                     >
                                         <SendIcon className="size-4" />
                                     </Button>
@@ -910,6 +1007,8 @@ export default function Live({ classroom }: Props) {
                     <Spinner className="mr-2 size-10" /> Joining Classroom...
                 </div>
             )}
+            <Toaster />
+            <Toaster />
         </div>
     );
 }

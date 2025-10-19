@@ -8,6 +8,7 @@ use App\Http\Controllers\LiveClassController;
 use App\Http\Controllers\LivekitController;
 use App\Http\Controllers\ProfileSetupController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ShortController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -43,7 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('classroom.leave');
 
         Route::post('/classrooms/{classroom}/start', [LiveClassController::class, 'start'])->name('classroom.start');
-        Route::post('/classrooms/{classroom}/end', [LiveClassController::class, 'end']);
+        Route::post('/classrooms/{classroom}/end', [LiveClassController::class, 'end'])->name('classroom.end');
         Route::post('/classrooms/{classroom}/join', [LiveClassController::class, 'join'])
             ->name('classrooms.join');
         Route::get('/classrooms/{classroom}/live', [ClassroomController::class, 'live'])
@@ -61,6 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/people', [UserController::class, 'index'])->name('user.index');
         Route::get('/people/{user}', [UserController::class, 'show'])->name('user.show');
+        Route::post('/rating', [RatingController::class, 'store'])->name('user.rating');
     });
 
     Route::get('get-departments', [DepartmentController::class, 'getDepartments'])->name('getDepartments');

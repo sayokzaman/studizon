@@ -43,7 +43,15 @@ export interface User {
     program?: Program;
     department?: Department;
     classrooms?: Classroom[];
+    classrooms_count?: number;
     shorts?: Short[];
+    shorts_count?: number;
+    followers?: User[];
+    follower_count?: number;
+    following?: User[];
+    following_count?: number;
+    ratings?: Rating[];
+    rating: number;
     created_at: string;
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...

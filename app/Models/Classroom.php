@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Classroom extends Model
 {
@@ -38,6 +39,7 @@ class Classroom extends Model
         'capacity_filled',
         'start_time',
         'end_time',
+        'is_rated',
     ];
 
     public function course()
@@ -75,14 +77,25 @@ class Classroom extends Model
     protected function startTime(): Attribute
     {
         return Attribute::make(
-            get: fn () => optional($this->starts_at)?->format('H:i:s')
+            get: fn () => optional($this->starts_at)?->format('H:i A')
         );
     }
 
     protected function endTime(): Attribute
     {
         return Attribute::make(
-            get: fn () => optional($this->ends_at)?->format('H:i:s')
+            get: fn () => optional($this->ends_at)?->format('H:i A')
         );
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    protected function getIsRatedAttribute(): bool
+    {
+        // is rated by the current user
+        return $this->ratings()->where('user_id', Auth::user()->id)->exists();
     }
 }

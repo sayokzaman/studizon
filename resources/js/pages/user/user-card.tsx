@@ -14,7 +14,9 @@ import { Spinner } from '@/components/ui/spinner';
 import { User } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import {
+    BookOpenIcon,
     Eye,
+    SquarePlayIcon,
     UserPlusIcon,
     UserRoundCheckIcon,
     UserRoundPlusIcon,
@@ -42,7 +44,7 @@ export default function UserCard({ user }: Props) {
     };
 
     return (
-        <Card className="w-full min-w-sm gap-3 rounded-2xl py-4 shadow-sm transition-all hover:shadow-md">
+        <Card className="flex-1 gap-3 rounded-2xl py-4 shadow-sm transition-all hover:shadow-md">
             <CardHeader className="gap-1 px-4">
                 <div className="flex justify-between">
                     <Avatar className="size-16">
@@ -80,12 +82,24 @@ export default function UserCard({ user }: Props) {
                 <div className="flex items-center justify-center pt-1 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                         <UserRoundPlusIcon className="h-4 w-4" />
-                        <span>{20} Followers</span>
+                        <span>{user.follower_count ?? 0} Followers</span>
                     </div>
                     <span className="mx-2 text-[4px]">⬤</span>
                     <div className="flex items-center gap-1">
                         <UserRoundCheckIcon className="h-4 w-4" />
-                        {40} Following
+                        {user.following_count ?? 0} Following
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-center pt-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                        <BookOpenIcon className="h-4 w-4" />
+                        <span>{user.classrooms_count ?? 0} Classrooms</span>
+                    </div>
+                    <span className="mx-2 text-[4px]">⬤</span>
+                    <div className="flex items-center gap-1">
+                        <SquarePlayIcon className="h-4 w-4" />
+                        {user.shorts_count ?? 0} Shorts
                     </div>
                 </div>
 
@@ -139,15 +153,17 @@ export default function UserCard({ user }: Props) {
                     )}
                 </Button>
 
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1"
-                    // onClick={onViewProfile}
-                >
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Profile
-                </Button>
+                <Link href={route('user.show', user.id)} className="w-full">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-9 w-full flex-1"
+                        // onClick={onViewProfile}
+                    >
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Profile
+                    </Button>
+                </Link>
             </CardFooter>
         </Card>
     );

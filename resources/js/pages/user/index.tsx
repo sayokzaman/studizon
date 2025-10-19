@@ -24,7 +24,12 @@ type Props = {
         following_only?: boolean;
         sort_by?: 'followers' | 'following' | 'classrooms' | '';
         sort_dir?: 'asc' | 'desc';
-        classroom_status?: 'scheduled' | 'completed' | 'cancelled' | 'in_progress' | '';
+        classroom_status?:
+            | 'scheduled'
+            | 'completed'
+            | 'cancelled'
+            | 'in_progress'
+            | '';
         per_page: number;
     };
 };
@@ -74,8 +79,8 @@ const UserIndex = ({ users, filters: initialFilters }: Props) => {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="People" />
 
-            <main className="mx-auto flex max-w-7xl flex-col items-center justify-center px-4">
-                <div className="flex w-full flex-col justify-between gap-4 py-4 sm:flex-row sm:items-center">
+            <main className="flex flex-col items-center justify-center px-4">
+                <div className="flex w-full max-w-7xl flex-col justify-between gap-4 py-4 sm:flex-row sm:items-center">
                     <div>
                         <h2 className="text-xl font-semibold">People</h2>
                     </div>
@@ -150,11 +155,14 @@ const UserIndex = ({ users, filters: initialFilters }: Props) => {
                                             onChange={(e) =>
                                                 setFilters({
                                                     ...filters,
-                                                    following_only: e.target.checked,
+                                                    following_only:
+                                                        e.target.checked,
                                                 })
                                             }
                                         />
-                                        <Label htmlFor="following-only">Show only users I follow</Label>
+                                        <Label htmlFor="following-only">
+                                            Show only users I follow
+                                        </Label>
                                     </div>
                                 </div>
 
@@ -166,14 +174,21 @@ const UserIndex = ({ users, filters: initialFilters }: Props) => {
                                         onChange={(e) =>
                                             setFilters({
                                                 ...filters,
-                                                sort_by: e.target.value as typeof filters.sort_by,
+                                                sort_by: e.target
+                                                    .value as typeof filters.sort_by,
                                             })
                                         }
                                     >
                                         <option value="">Default</option>
-                                        <option value="followers">Followers</option>
-                                        <option value="following">Following</option>
-                                        <option value="classrooms">Classrooms</option>
+                                        <option value="followers">
+                                            Followers
+                                        </option>
+                                        <option value="following">
+                                            Following
+                                        </option>
+                                        <option value="classrooms">
+                                            Classrooms
+                                        </option>
                                     </select>
                                 </div>
 
@@ -192,10 +207,18 @@ const UserIndex = ({ users, filters: initialFilters }: Props) => {
                                             }
                                         >
                                             <option value="">Any</option>
-                                            <option value="scheduled">Scheduled</option>
-                                            <option value="in_progress">In Progress</option>
-                                            <option value="completed">Completed</option>
-                                            <option value="cancelled">Cancelled</option>
+                                            <option value="scheduled">
+                                                Scheduled
+                                            </option>
+                                            <option value="in_progress">
+                                                In Progress
+                                            </option>
+                                            <option value="completed">
+                                                Completed
+                                            </option>
+                                            <option value="cancelled">
+                                                Cancelled
+                                            </option>
                                         </select>
                                     </div>
                                 )}
@@ -208,7 +231,9 @@ const UserIndex = ({ users, filters: initialFilters }: Props) => {
                                         onChange={(e) =>
                                             setFilters({
                                                 ...filters,
-                                                sort_dir: e.target.value as 'asc' | 'desc',
+                                                sort_dir: e.target.value as
+                                                    | 'asc'
+                                                    | 'desc',
                                             })
                                         }
                                     >
@@ -256,7 +281,7 @@ const UserIndex = ({ users, filters: initialFilters }: Props) => {
                     <div />
                 </div>
 
-                <div className="grid grid-cols-3 gap-8">
+                <div className="grid w-full max-w-7xl gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {users.map((user) => (
                         <UserCard user={user} />
                     ))}

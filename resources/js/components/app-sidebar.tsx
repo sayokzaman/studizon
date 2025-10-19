@@ -19,7 +19,7 @@ import {
     LayoutGrid,
     LibraryBig,
     SquarePlay,
-    UserPlus2Icon,
+    UserRoundPlusIcon,
     Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -86,45 +86,37 @@ export function AppSidebar() {
                 {/* <NavFooter items={footerNavItems} className="mt-auto" /> */}
                 <div
                     className={cn(
-                        'mb-4 flex w-full flex-col items-center justify-center gap-4 transition-all duration-300 ease-in-out',
-                        state === 'expanded' ? 'px-2' : '',
+                        'flex items-center justify-center pb-4 text-xs text-muted-foreground',
+                        state === 'collapsed'
+                            ? 'flex-col gap-3'
+                            : 'overflow-hidden',
                     )}
                 >
-                    <div
-                        className={cn(
-                            'relative flex w-full items-center gap-2',
-                            state === 'collapsed' ? 'justify-center' : '',
-                        )}
-                    >
-                        <UserPlus2Icon className="h-5 w-5 text-primary/80" />
+                    <div className="relative flex items-center gap-1">
+                        <UserRoundPlusIcon className="h-4 w-4" />
                         <span
-                            className={cn(
-                                'w-12 text-center text-[10px] font-semibold transition-all duration-300 ease-in-out',
+                            className={
                                 state === 'collapsed'
-                                    ? 'absolute -top-2 -right-1/2 translate-x-1/2 rounded-full border border-primary bg-background px-1.5 py-0.5 text-white'
-                                    : '',
-                            )}
+                                    ? 'absolute -top-2.5 -right-1/2 flex h-4 translate-x-1/2 items-center justify-center rounded-full bg-blue-500 px-1 font-semibold text-white'
+                                    : ''
+                            }
                         >
-                            20k+
+                            {auth.user.follower_count ?? 0}
+                            {state !== 'collapsed' && ' Followers'}
                         </span>
                     </div>
-
-                    <div
-                        className={cn(
-                            'relative flex w-full items-center gap-2',
-                            state === 'collapsed' ? 'justify-center' : '',
-                        )}
-                    >
-                        <CoinsIcon className="h-5 w-5 text-yellow-400" />
+                    <span className="mx-2 text-[4px]">⬤</span>
+                    <div className="relative flex items-center gap-1">
+                        <CoinsIcon className="h-4 w-4" />
                         <span
-                            className={cn(
-                                'w-12 text-center text-[10px] font-semibold transition-all duration-300 ease-in-out',
+                            className={
                                 state === 'collapsed'
-                                    ? 'absolute -top-2 -right-1/2 translate-x-1/2 rounded-full border border-yellow-400 bg-background px-1.5 py-0.5 text-white'
-                                    : '',
-                            )}
+                                    ? 'absolute -top-2.5 -right-1/2 flex h-4 translate-x-1/2 items-center justify-center rounded-full bg-yellow-600 px-1 font-semibold text-white'
+                                    : ''
+                            }
                         >
-                            {auth.user.credits}
+                            {auth.user.credits ?? 0}
+                            {state !== 'collapsed' && ' Followers'}
                         </span>
                     </div>
                 </div>

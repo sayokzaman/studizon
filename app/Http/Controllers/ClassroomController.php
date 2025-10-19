@@ -12,7 +12,7 @@ class ClassroomController extends Controller
 {
     public function index(Request $request)
     {
-        // Do not auto-set scheduled_date; time-only filters should act on time component only.
+        $user = Auth::user();
 
         $query = Classroom::query()
             ->with(['course', 'teacher', 'students'])
@@ -20,7 +20,8 @@ class ClassroomController extends Controller
                 $q->where(function ($query) use ($request) {
                     $query->where('topic', 'like', "%{$request->search}%")
                         ->orWhereHas('course', function ($query) use ($request) {
-                            $query->where('name', 'like', "%{$request->search}%");
+                            $query->where('name', 'like', "%{$request->search}%")
+                                ->orWhere('code', 'like', "%{$request->search}%");
                         });
                 });
             })
@@ -30,110 +31,64 @@ class ClassroomController extends Controller
                     $q->whereIn('course_id', $ids);
                 }
             })
-            // Independent filters: scheduled_date, starts_at (>=), ends_at (<=)
-            ->when($request->filled('scheduled_date') && $request->filled('starts_at'), function ($q) use ($request) {
-                $scheduledDate = $request->input('scheduled_date');
-                $startsAtInput = trim((string) $request->input('starts_at'));
-
-                // Match scheduled_date first
-                $q->whereDate('scheduled_date', $scheduledDate);
-
-                // Detect time-only format (e.g. "22:00" or "22:00:00")
-                if (preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $startsAtInput)) {
-                    if (strlen($startsAtInput) === 5) {
-                        $startsAtInput .= ':00';
-                    }
-
-                    // Combine with scheduled date and convert to UTC (DB stores UTC)
-                    $local = Carbon::createFromFormat('Y-m-d H:i:s', "$scheduledDate $startsAtInput", config('app.timezone'));
-                    $utc = $local->clone()->setTimezone('UTC')->toDateTimeString();
-
-                    // Use full datetime comparison instead of whereTime (fixes timezone issue)
-                    return $q->where('starts_at', '>=', $utc);
-                }
-
-                // Detect full datetime input (e.g. "2025-10-18 22:00" or with seconds)
-                if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/', $startsAtInput)) {
-                    if (strlen($startsAtInput) === 16) {
-                        $startsAtInput .= ':00';
-                    }
-
-                    $local = Carbon::createFromFormat('Y-m-d H:i:s', $startsAtInput, config('app.timezone'));
-                    $utc = $local->clone()->setTimezone('UTC')->toDateTimeString();
-
-                    return $q->where('starts_at', '>=', $utc);
-                }
-
-                return $q;
+            ->when($request->filled('scheduled_date') && ($request->filled('starts_at') || $request->filled('ends_at')), function ($q) use ($request) {
+                $q->where(function ($query) use ($request) {
+                    $query->whereDate('scheduled_date', $request->scheduled_date)
+                        ->when($request->filled('starts_at'), function ($q) use ($request) {
+                            $q->whereTime('starts_at', '>=', $request->starts_at);
+                        })
+                        ->when($request->filled('ends_at'), function ($q) use ($request) {
+                            $q->whereTime('ends_at', '<=', $request->ends_at);
+                        });
+                });
             })
-            ->when(! $request->filled('scheduled_date') && $request->filled('starts_at'), function ($q) use ($request) {
-                // No scheduled_date — assume today in app timezone
-                $scheduledDate = now(config('app.timezone'))->toDateString();
-                $q->whereDate('scheduled_date', $scheduledDate);
-
-                $startsAtInput = trim((string) $request->input('starts_at'));
-
-                if (preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $startsAtInput)) {
-                    if (strlen($startsAtInput) === 5) {
-                        $startsAtInput .= ':00';
-                    }
-
-                    $local = Carbon::createFromFormat('Y-m-d H:i:s', "$scheduledDate $startsAtInput", config('app.timezone'));
-                    $utc = $local->clone()->setTimezone('UTC')->toDateTimeString();
-
-                    return $q->where('starts_at', '>=', $utc);
-                }
-
-                if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/', $startsAtInput)) {
-                    if (strlen($startsAtInput) === 16) {
-                        $startsAtInput .= ':00';
-                    }
-
-                    $local = Carbon::createFromFormat('Y-m-d H:i:s', $startsAtInput, config('app.timezone'));
-                    $utc = $local->clone()->setTimezone('UTC')->toDateTimeString();
-
-                    return $q->where('starts_at', '>=', $utc);
-                }
-
-                return $q;
-            })
-            ->when($request->filled('ends_at'), function ($q) use ($request) {
-                $endsAt = (string) $request->input('ends_at');
-                // Time-only
-                if (preg_match('/^\d{2}:\d{2}(?::\d{2})?$/', $endsAt)) {
-                    if (strlen($endsAt) === 5) {
-                        $endsAt .= ':00';
-                    }
-
-                    return $q->whereTime('ends_at', '<=', $endsAt);
-                }
-                // Datetime
-                if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?$/', $endsAt)) {
-                    if (strlen($endsAt) === 16) {
-                        $endsAt .= ':00';
-                    }
-
-                    return $q->where('ends_at', '<=', $endsAt);
-                }
+            ->when($request->filled('scheduled_date') && ! ($request->filled('starts_at') || $request->filled('ends_at')), function ($q) use ($request) {
+                $q->where(function ($query) use ($request) {
+                    $query->whereDate('scheduled_date', $request->scheduled_date);
+                });
             });
 
-        $classrooms = $query->orderByDesc('scheduled_date')
-            ->orderBy('starts_at')
+        $exploreQuery = clone $query;
+        $myQuery = clone $query;
+        $joinedQuery = clone $query;
+
+        $exploreQuery->where('teacher_id', '!=', $user->id);
+        $myQuery->where('teacher_id', $user->id);
+        $joinedQuery->whereHas('students', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        });
+
+        // Sorting (supports credits via cost)
+        $sortBy = (string) $request->input('sort_by', '');
+        $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $applySorting = function ($q) use ($sortBy, $sortDir) {
+            if ($sortBy === 'credits') {
+                $q->orderBy('cost', $sortDir)
+                    ->orderByDesc('scheduled_date')
+                    ->orderBy('starts_at');
+            } else {
+                $q->orderByDesc('scheduled_date')
+                    ->orderBy('starts_at');
+            }
+        };
+
+        $applySorting($exploreQuery);
+        $applySorting($myQuery);
+        $applySorting($joinedQuery);
+
+        // Explore is paginated; My/Joined are arrays (UI expects arrays)
+        $classrooms = $exploreQuery
             ->paginate((int) ($request->per_page ?? 20))
             ->withQueryString();
 
-        $user = $request->user();
-        $myClasses = $user
-            ? Classroom::with(['course', 'teacher', 'students'])
-                ->where('teacher_id', $user->id)
-                ->orderBy('scheduled_date')
-                ->orderBy('starts_at')
-                ->get()
-            : collect();
+        $myClasses = $myQuery
+            ->paginate((int) ($request->per_page ?? 20))
+            ->withQueryString();
 
-        $joinedClasses = $user
-            ? $user->joinedClassrooms()->with(['course', 'teacher', 'students'])->get()
-            : collect();
+        $joinedClasses = $joinedQuery
+            ->paginate((int) ($request->per_page ?? 20))
+            ->withQueryString();
 
         return inertia('classroom/index', [
             'classrooms' => $classrooms,
@@ -146,6 +101,8 @@ class ClassroomController extends Controller
                 'starts_at' => (string) $request->input('starts_at', ''),
                 'ends_at' => (string) $request->input('ends_at', ''),
                 'per_page' => (int) ($request->input('per_page', 20)),
+                'sort_by' => (string) $request->input('sort_by', ''),
+                'sort_dir' => (string) $request->input('sort_dir', ''),
             ],
         ]);
     }
@@ -162,8 +119,11 @@ class ClassroomController extends Controller
         // Prevent unauthorized access
         abort_unless($classroom->students->contains($user->id) || $user->id === $classroom->teacher_id, 403);
 
+        $fromEnd = Auth::user()->id !== $classroom->teacher_id && request()->query('from') === 'end_class' ? true : false;
+
         return inertia('classroom/show', [
             'classroom' => $classroom->load('students.program', 'teacher', 'course.program'),
+            'openRatingModal' => $fromEnd,
         ]);
     }
 
@@ -247,6 +207,7 @@ class ClassroomController extends Controller
 
         // ✅ 5. Return response
         return redirect()->route('classroom.show', $classRoom)->with([
+            'success' => true,
             'message' => 'Classroom created successfully',
             'classroom' => $classRoom,
             // ->load('notes'),
@@ -260,16 +221,16 @@ class ClassroomController extends Controller
         // 1. Check if already joined
         if ($classroom->students()->where('user_id', $user->id)->exists()) {
             return redirect()->route('classroom.show', $classroom)->with([
-                'message' => 'You have already joined this class.',
                 'success' => false,
+                'message' => 'You have already joined this class.',
             ]);
         }
 
         // 2. Check capacity
         if ($classroom->students()->count() >= $classroom->capacity) {
             return redirect()->back()->with([
-                'message' => 'This class is full.',
                 'success' => false,
+                'message' => 'This class is full.',
             ], 422);
         }
 
@@ -282,7 +243,10 @@ class ClassroomController extends Controller
             $user->deductCredits($classroom->cost);
             $classroom->students()->attach($user->id);
         } else {
-            return back()->withErrors(['Not enough credits to join.']);
+            return back()->with([
+                'success' => false,
+                'message' => 'You do not have enough credits to join this class.',
+            ]);
         }
 
         // 5. Deduct currency if needed
@@ -306,30 +270,30 @@ class ClassroomController extends Controller
 
         if ($classroom->teacher_id === $user->id) {
             return redirect()->route('classroom.show', $classroom)
-                ->with('message', 'You cannot join your own class.');
+                ->with(['message', 'You cannot join your own class.', 'success' => false]);
         }
 
         // Reuse the same join logic (optionally refactor to private method)
         if ($classroom->students()->where('user_id', $user->id)->exists()) {
             return redirect()->route('classroom.show', $classroom)
-                ->with('message', 'You have already joined this class.');
+                ->with(['message', 'You have already joined this class.', 'success' => false]);
         }
 
         if ($classroom->students()->count() >= $classroom->capacity) {
             return redirect()->route('classroom.show', $classroom)
-                ->withErrors(['This class is full.']);
+                ->with(['message', 'This class is full.', 'success' => false]);
         }
 
         if ($user->credits < $classroom->cost) {
             return redirect()->route('classroom.show', $classroom)
-                ->withErrors(['Not enough credits to join.']);
+                ->with(['message', 'You do not have enough credits to join this class.', 'success' => false]);
         }
 
         $user->deductCredits($classroom->cost);
         $classroom->students()->attach($user->id);
 
         return redirect()->route('classroom.show', $classroom)
-            ->with('message', 'You have joined the class!');
+            ->with(['message', 'You have joined the class!', 'success' => true]);
     }
 
     public function leaveClass(Request $request, Classroom $classroom)

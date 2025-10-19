@@ -23,6 +23,7 @@ export interface ClassRoom {
     ends_at?: string; // ISO datetime
     created_at: string; // ISO date-time string
     updated_at: string; // ISO date-time string
+    is_rated: boolean;
     course?: Course;
     teacher?: User;
     students?: User[];

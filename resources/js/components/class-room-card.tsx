@@ -10,7 +10,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { SharedData } from '@/types';
+import { SharedData, User } from '@/types';
 import { ClassRoom } from '@/types/classroom';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import {
@@ -27,11 +27,12 @@ import { route } from 'ziggy-js';
 
 interface Props {
     classroom: ClassRoom;
+    userProp?: User;
 }
 
-export const ClassRoomCard: React.FC<Props> = ({ classroom }) => {
+export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
     const { auth } = usePage<SharedData>().props;
-    const user = auth.user;
+    const user = userProp ? userProp : auth.user;
 
     const formattedDate = new Date(classroom.scheduled_date).toLocaleDateString(
         undefined,
@@ -71,7 +72,7 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom }) => {
                     <img
                         src={
                             classroom.thumbnail_path ||
-                            './thumbnail-placeholder.jpg'
+                            '/thumbnail-placeholder.jpg'
                         }
                         alt={classroom.topic}
                         className="h-28 w-full object-cover"
@@ -96,23 +97,30 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom }) => {
                             <Avatar className="size-16">
                                 <AvatarImage
                                     src="https://github.com/shadcn.png"
-                                    alt={user.name}
+                                    alt={classroom.teacher?.name}
                                 />
-                                <AvatarFallback>{user.name}</AvatarFallback>
+                                <AvatarFallback>
+                                    {classroom.teacher?.name}
+                                </AvatarFallback>
                             </Avatar>
 
                             <div className="flex w-full items-end justify-between">
                                 <Link
-                                    href={route('user.show', user.id)}
+                                    href={route(
+                                        'user.show',
+                                        userProp
+                                            ? user.id
+                                            : classroom.teacher?.id,
+                                    )}
                                     className="z-10 block hover:underline"
                                 >
                                     <CardTitle className="text-lg font-semibold">
-                                        {user.name}
+                                        {classroom.teacher?.name}
                                     </CardTitle>
                                 </Link>
 
                                 <div className="w-20">
-                                    <StarRating rating={3.5} readonly />
+                                    <StarRating rating={user.rating} readonly />
                                 </div>
                             </div>
                         </div>

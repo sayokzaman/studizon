@@ -83,13 +83,6 @@ const StarRating = ({
                         );
                     })}
                 </div>
-
-                {/* Rating Text */}
-                {!readonly && (
-                    <div className="ml-3 min-w-[80px] text-right text-sm text-gray-600">
-                        {normalizedRating.toFixed(1)} / 5
-                    </div>
-                )}
             </div>
         </div>
     );

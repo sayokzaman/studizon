@@ -53,7 +53,14 @@ class User extends Authenticatable
         ];
     }
 
-    protected $appends = ['is_following'];
+    protected $appends = [
+        'is_following',
+        'follower_count',
+        'following_count',
+        'shorts_count',
+        'classrooms_count',
+        'rating',
+    ];
 
     public function program()
     {
@@ -68,6 +75,11 @@ class User extends Authenticatable
     public function classrooms()
     {
         return $this->belongsToMany(Classroom::class, 'classroom_user')->withTimestamps();
+    }
+
+    public function getClassroomsCountAttribute()
+    {
+        return $this->classrooms()->count();
     }
 
     public function joinedClassrooms()
@@ -90,14 +102,43 @@ class User extends Authenticatable
         return $this->hasMany(Short::class, 'creator_id');
     }
 
+    public function getShortsCountAttribute(): int
+    {
+        return $this->shorts()->count();
+    }
+
     public function followers()
     {
         return $this->hasMany(Follower::class, 'following_id');
     }
 
+    public function getFollowerCountAttribute(): int
+    {
+        return $this->followers()->count();
+    }
+
     public function following()
     {
         return $this->hasMany(Follower::class, 'follower_id');
+    }
+
+    public function getFollowingCountAttribute(): int
+    {
+        return $this->following()->count();
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    public function getRatingAttribute(): float
+    {   
+        // get average rating if exists 
+        if ($this->ratings()->exists()) {
+            return $this->ratings()->avg('rating');
+        }
+        return 0.0;
     }
 
     // make an attribute is_following

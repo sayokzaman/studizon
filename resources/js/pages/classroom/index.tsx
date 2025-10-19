@@ -19,7 +19,7 @@ import { Paginated } from '@/types/paginate';
 import { Head, Link, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { ListFilterIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -31,14 +31,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 type Props = {
     classrooms: Paginated<ClassRoom>;
     user: User;
-    myClasses: ClassRoom[];
-    joinedClasses: ClassRoom[];
+    myClasses: Paginated<ClassRoom>;
+    joinedClasses: Paginated<ClassRoom>;
     filters: {
         search?: string;
+        classType?: string;
         scheduled_date?: string;
         starts_at?: string;
         ends_at?: string;
-        course_ids: number[];
+        course_ids: string[];
         per_page?: number;
     };
 };
@@ -58,8 +59,10 @@ const ClassroomIndex = ({
     });
     const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
 
+    // UI filter state (drafts before Apply). Search will fetch on change.
     const [filters, setFilters] = useState({
         search: initialFilters?.search ?? '',
+        classType: initialFilters?.classType ?? 'explore',
         scheduled_date: initialFilters?.scheduled_date ?? '',
         starts_at: initialFilters?.starts_at ?? '',
         ends_at: initialFilters?.ends_at ?? '',
@@ -67,7 +70,19 @@ const ClassroomIndex = ({
         per_page: initialFilters?.per_page ?? 20,
     });
 
+    // Track the last applied filters as provided by server props.
+    const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+    useEffect(() => {
+        setAppliedFilters(initialFilters);
+        setFilters((prev) => ({
+            ...prev,
+            search: initialFilters?.search ?? '',
+        }));
+    }, [initialFilters]);
+
     const applyFilters = () => {
+        // Commit current UI filters as applied, then fetch
+        setAppliedFilters({ ...filters });
         router.get(
             '/classroom',
             {
@@ -81,6 +96,51 @@ const ClassroomIndex = ({
             { preserveScroll: true, preserveState: true, replace: true },
         );
     };
+
+    // Debounced fetch on search change only; other filters require Apply
+    const skipInitialSearchFetch = useRef(true);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null,
+    );
+    useEffect(() => {
+        if (skipInitialSearchFetch.current) {
+            skipInitialSearchFetch.current = false;
+            return;
+        }
+
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+
+        searchDebounceRef.current = setTimeout(() => {
+            // Send search + last applied values for other filters
+            const params = {
+                search: filters.search,
+                scheduled_date: appliedFilters?.scheduled_date ?? '',
+                starts_at: appliedFilters?.starts_at ?? '',
+                ends_at: appliedFilters?.ends_at ?? '',
+                course_ids: appliedFilters?.course_ids ?? [],
+                per_page: appliedFilters?.per_page ?? 20,
+            };
+
+            // Update local applied copy for search to keep UI/URL consistent
+            setAppliedFilters((prev) => ({ ...prev, search: filters.search }));
+
+            router.get('/classroom', params, {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+            });
+        }, 450);
+
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        };
+        // Only react to search text changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filters.search]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -141,7 +201,8 @@ const ClassroomIndex = ({
                                                 ...filters,
                                                 course_ids:
                                                     selectedCourseObjects.map(
-                                                        (course) => course.id,
+                                                        (course) =>
+                                                            course.id.toString(),
                                                     ),
                                             });
                                         }}
@@ -181,9 +242,9 @@ const ClassroomIndex = ({
                                     />
                                 </div>
 
-                                <div className="grid gap-2">
-                                    <Label>Starts After</Label>
-                                    <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid gap-2">
+                                        <Label>Starts After</Label>
                                         <Input
                                             type="time"
                                             step="1"
@@ -213,11 +274,9 @@ const ClassroomIndex = ({
                                             }}
                                         />
                                     </div>
-                                </div>
 
-                                <div className="grid gap-2">
-                                    <Label>Ends Before</Label>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid gap-2">
+                                        <Label>Ends Before</Label>
                                         <Input
                                             type="time"
                                             step="1"
@@ -256,6 +315,7 @@ const ClassroomIndex = ({
                                             setSelectedCourses([]);
                                             setFilters({
                                                 search: '',
+                                                classType: 'explore',
                                                 scheduled_date: '',
                                                 starts_at: '',
                                                 ends_at: '',
@@ -327,7 +387,7 @@ const ClassroomIndex = ({
                                         No classrooms available.
                                     </p>
                                 ) : (
-                                    <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                                    <ul className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                                         {classrooms.data.map((classroom) => (
                                             <ClassRoomCard
                                                 key={classroom.id}
@@ -343,13 +403,13 @@ const ClassroomIndex = ({
                     <TabsContent value="joined">
                         <div className="w-full pt-4">
                             {joinedClasses ? (
-                                joinedClasses.length === 0 ? (
+                                joinedClasses.data.length === 0 ? (
                                     <p className="mt-2 text-sm text-muted-foreground">
                                         No Classrooms available.
                                     </p>
                                 ) : (
-                                    <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                                        {joinedClasses.map((classroom) => (
+                                    <ul className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                                        {joinedClasses.data.map((classroom) => (
                                             <ClassRoomCard
                                                 key={classroom.id}
                                                 classroom={classroom}
@@ -364,13 +424,13 @@ const ClassroomIndex = ({
                     <TabsContent value="myClasses">
                         <div className="w-full pt-4">
                             {myClasses ? (
-                                myClasses.length === 0 ? (
+                                myClasses.data.length === 0 ? (
                                     <p className="mt-2 text-sm text-muted-foreground">
                                         No Classrooms available.
                                     </p>
                                 ) : (
-                                    <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                                        {myClasses.map((classroom) => (
+                                    <ul className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                                        {myClasses.data.map((classroom) => (
                                             <ClassRoomCard
                                                 key={classroom.id}
                                                 classroom={classroom}

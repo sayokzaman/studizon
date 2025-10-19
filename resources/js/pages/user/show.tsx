@@ -8,7 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, SharedData, User } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { BookOpenText, NotebookPen, SquarePlay, UserPlusIcon, UserXIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import {
+    BookOpenText,
+    NotebookPen,
+    SquarePlay,
+    UserPlusIcon,
+    UserRoundCheckIcon,
+    UserRoundPlusIcon,
+    UserXIcon,
+} from 'lucide-react';
 import { route } from 'ziggy-js';
 
 type Props = {
@@ -46,7 +55,7 @@ const UserShow = ({ user }: Props) => {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="mx-auto max-w-6xl p-6">
+            <div className="mx-auto max-w-7xl p-6">
                 {/* Profile Header */}
                 <div className="flex flex-col items-center justify-between gap-6 rounded-2xl bg-muted/50 p-6 shadow-md md:flex-row">
                     {/* Profile Image and Basic Info */}
@@ -54,17 +63,33 @@ const UserShow = ({ user }: Props) => {
                         <img
                             src="https://cdn.pixabay.com/photo/2023/07/13/15/06/avatar-8125365_960_720.png"
                             alt="Prof"
-                            className="h-28 w-28 rounded-full border-4 border-zinc-700 object-cover shadow-md"
+                            className="h-36 w-36 rounded-full border-4 border-zinc-700 object-cover shadow-md"
                         />
-                        <div>
+                        <div className="grid gap-1">
                             <h2 className="text-2xl font-semibold">
                                 {user.name}
                             </h2>
+
                             <p className="text-sm text-muted-foreground">
                                 {user.email}
                             </p>
+
+                            <div className="flex items-center justify-center pt-1 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                    <UserRoundPlusIcon className="h-4 w-4" />
+                                    <span>
+                                        {user.follower_count ?? 0} Followers
+                                    </span>
+                                </div>
+                                <span className="mx-2 text-[4px]">⬤</span>
+                                <div className="flex items-center gap-1">
+                                    <UserRoundCheckIcon className="h-4 w-4" />
+                                    {user.following_count ?? 0} Following
+                                </div>
+                            </div>
+
                             <p className="text-sm text-muted-foreground">
-                                70 Follows • 5K Followers
+                                Joined on: {format(user.created_at, 'PP')}
                             </p>
                         </div>
                     </div>
@@ -107,68 +132,71 @@ const UserShow = ({ user }: Props) => {
                         <h3 className="text-lg font-semibold">Personal Info</h3>
                     </CardHeader>
 
-                    <CardContent className="grid grid-cols-2 text-sm">
-                        {/* LEFT SIDE */}
-                        <div className="flex flex-col gap-2">
-                            <div>
-                                <p className="font-semibold text-muted-foreground">
-                                    Department :
-                                </p>
-                                <p className="mt-1">
-                                    {/* {user.program.department.name} */}
-                                </p>
-                            </div>
+                    <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p className="font-semibold text-muted-foreground">
+                                Department :
+                            </p>
+                            <p className="mt-1">
+                                {user.program.department.name}
+                            </p>
+                        </div>
 
-                            <div>
-                                <p className="font-bold text-muted-foreground">
-                                    Running Courses :
-                                </p>
-                                <div className="mt-1 flex flex-wrap gap-2">
-                                    {user.courses && user.courses.length > 0
-                                        ? user.courses.map((course) => (
-                                              <Badge key={course.id}>
-                                                  {course.name}
-                                              </Badge>
-                                          ))
-                                        : 'No Courses'}
-                                </div>
-                            </div>
+                        <div>
+                            <p className="font-semibold text-muted-foreground">
+                                Program :
+                            </p>
+                            <p className="mt-1">{user.program.name}</p>
+                        </div>
 
-                            <div>
-                                <p className="font-bold text-muted-foreground">
-                                    Expert In :
-                                </p>
-                                <p className="mt-1">SPL, DBMS</p>
+                        <div className="col-span-2">
+                            <p className="font-semibold text-muted-foreground">
+                                Running Courses :
+                            </p>
+                            <div className="mt-1 flex flex-wrap gap-2">
+                                {user.courses && user.courses.length > 0
+                                    ? user.courses.map((course) => (
+                                          <Badge key={course.id}>
+                                              {course.name}
+                                          </Badge>
+                                      ))
+                                    : 'No Courses'}
                             </div>
                         </div>
 
-                        {/* RIGHT SIDE */}
-                        <div className="flex flex-col gap-2">
-                            <div>
-                                <p className="pt-2 font-bold text-muted-foreground">
-                                    Badges :
-                                </p>
-                                <span className="mt-1 rounded-full bg-emerald-600 px-3 py-0.5 text-xs">
-                                    Points
-                                </span>
+                        <div className="col-span-2">
+                            <p className="font-semibold text-muted-foreground">
+                                Badges Earned :
+                            </p>
+                            <div className="mt-1 flex w-full flex-wrap gap-2 rounded-full py-0.5 text-xs">
+                                {user.courses && user.courses.length > 0
+                                    ? user.courses.map((course) => (
+                                          <Badge
+                                              className="bg-emerald-600"
+                                              key={course.id}
+                                          >
+                                              Badge
+                                          </Badge>
+                                      ))
+                                    : 'No Courses'}
                             </div>
+                        </div>
 
-                            <div>
-                                <p className="font-bold text-muted-foreground">
-                                    CV :
-                                </p>
-                                <span className="mt-1 cursor-pointer rounded-full bg-emerald-600 px-3 py-0.5 text-xs hover:bg-emerald-700">
-                                    Click here for CV
-                                </span>
+                        <div>
+                            <p className="font-semibold text-muted-foreground">
+                                CV :
+                            </p>
+                            <div className="mt-1 w-fit cursor-pointer rounded-full bg-emerald-600 px-3 py-0.5 text-xs hover:bg-emerald-700">
+                                Click here for CV
                             </div>
+                        </div>
 
-                            <div>
-                                <p className="font-bold text-muted-foreground">
-                                    Skills :
-                                </p>
-                                <span className="mt-1 text-muted-foreground">
-                                    #CSS, #JavaScript, #HTML
-                                </span>
+                        <div>
+                            <p className="font-semibold text-muted-foreground">
+                                Skills :
+                            </p>
+                            <div className="mt-1 text-muted-foreground">
+                                #CSS, #JavaScript, #HTML
                             </div>
                         </div>
                     </CardContent>
@@ -205,6 +233,7 @@ const UserShow = ({ user }: Props) => {
                                       <ClassRoomCard
                                           key={classroom.id}
                                           classroom={classroom}
+                                          userProp={user}
                                       />
                                   ))
                                 : 'No Classes'}

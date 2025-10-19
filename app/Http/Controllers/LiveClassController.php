@@ -6,7 +6,6 @@ use App\Models\Classroom;
 use App\Services\LivekitToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class LiveClassController extends Controller
 {
@@ -96,7 +95,7 @@ class LiveClassController extends Controller
             return response()->json(['ok' => true, 'is_live' => false, 'message' => $success]);
         }
 
-        return redirect()->route('classroom.index')->with(['message' => $success, 'success' => true]);
+        return redirect()->route('classroom.show', ['classroom' => $classroom->id, 'from' => 'end_class'])->with(['message' => $success, 'success' => true]);
     }
 
     /**

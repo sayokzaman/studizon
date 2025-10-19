@@ -1,3 +1,5 @@
+import ClassCancelDialog from '@/components/class-cancel-dialog';
+import ClassLeaveDialog from '@/components/class-leave-dialog';
 import StarRating from '@/components/star-rating';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +21,6 @@ import {
     CoinsIcon,
     ExternalLinkIcon,
     LogInIcon,
-    LogOutIcon,
     MinusIcon,
 } from 'lucide-react';
 import React from 'react';
@@ -40,6 +41,7 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
             weekday: 'short',
             month: 'short',
             day: 'numeric',
+            year: 'numeric',
         },
     );
 
@@ -189,46 +191,35 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
                         </Link>
 
                         {isTeacher ? (
-                            <Link href={`/classroom/${classroom.id}`}>
-                                <Button
-                                    className="w-full"
-                                    variant={'destructive'}
-                                >
-                                    <LogOutIcon className="h-4 w-4" />
-                                    Cancel
-                                </Button>
-                            </Link>
+                            <ClassCancelDialog classroom={classroom} />
                         ) : (
-                            <Link href={`/classroom/${classroom.id}`}>
-                                <Button
-                                    className="w-full"
-                                    variant={'destructive'}
-                                >
-                                    <LogOutIcon className="h-4 w-4" />
-                                    Leave
-                                </Button>
-                            </Link>
+                            <ClassLeaveDialog classroom={classroom} />
                         )}
                     </>
                 ) : (
                     <>
                         <Button
                             onClick={() => handleJoin(classroom.id)}
-                            className="group w-full"
+                            className="group w-full overflow-hidden"
                         >
-                            <span className="flex items-center gap-2 transition-all duration-300 group-hover:hidden">
-                                <LogInIcon className="h-4 w-4" />
-                                Enroll
-                            </span>
-                            <span className="hidden transition-all duration-300 group-hover:inline">
-                                <span>
-                                    <MinusIcon className="inline h-4 w-4 text-red-400" />{' '}
-                                </span>
-                                <CoinsIcon className="inline h-4 w-4 text-yellow-400" />{' '}
-                                <span className="text-foreground">
-                                    {classroom.cost} credits
-                                </span>
-                            </span>
+                            <div className="">
+                                <div className="flex translate-y-2.5 items-center justify-center gap-2 transition-all duration-300 group-hover:-translate-y-9 group-hover:opacity-0">
+                                    <span className="flex items-center gap-2">
+                                        <LogInIcon className="h-4 w-4" />
+                                        Enroll
+                                    </span>
+                                </div>
+
+                                <div className="translate-y-9 opacity-0 transition-all duration-300 group-hover:-translate-y-2.5 group-hover:opacity-100">
+                                    <span className="flex items-center gap-1 transition-all duration-300 ease-in-out">
+                                        <span>
+                                            <MinusIcon className="text-red-400" />{' '}
+                                        </span>
+                                        <CoinsIcon className="text-yellow-500" />{' '}
+                                        <span>{classroom.cost} credits</span>
+                                    </span>
+                                </div>
+                            </div>
                         </Button>
 
                         <Button variant={'secondary'}>

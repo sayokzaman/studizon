@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Follower;
+use App\Models\Notification;
 use App\Models\User;
+use App\NotificationType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class FollowerController extends Controller
 {
@@ -25,9 +27,17 @@ class FollowerController extends Controller
         }
 
         // Attach implicitly via relationship; idempotent
-        $request->user()
-            ->following()
-            ->firstOrCreate(['following_id' => $follow->id]);
+        DB::transaction(function () use ($request, $follow) {
+            $request->user()
+                ->following()
+                ->create(['following_id' => $follow->id]);
+
+            Notification::create([
+                'user_id' => $follow->id,
+                'type' => NotificationType::FOLLOW,
+                'follower_id' => $request->user()->id
+            ]);
+        });
 
         return redirect()->back()->with([
             'success' => true,

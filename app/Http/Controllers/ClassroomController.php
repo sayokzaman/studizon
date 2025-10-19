@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
+use App\Models\Notification;
+use App\NotificationType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -58,18 +60,37 @@ class ClassroomController extends Controller
             $q->where('user_id', $user->id);
         });
 
-        // Sorting (supports credits via cost)
-        $sortBy = (string) $request->input('sort_by', '');
+        // Sorting: support UI options (scheduled_date, created_at, credits, capacity, rating, starts_at, ends_at)
+        $sortBy = (string) $request->input('sort_by', 'scheduled_date');
         $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
 
-        $applySorting = function ($q) use ($sortBy, $sortDir) {
-            if ($sortBy === 'credits') {
-                $q->orderBy('cost', $sortDir)
-                    ->orderByDesc('scheduled_date')
-                    ->orderBy('starts_at');
+        // Map UI value -> actual column
+        $columnMap = [
+            'scheduled_date' => 'scheduled_date',
+            'created_at' => 'created_at',
+            'credits' => 'cost', // credits in UI maps to cost in DB
+            'capacity' => 'capacity',
+            'starts_at' => 'starts_at',
+            'ends_at' => 'ends_at',
+            'rating' => 'rating',
+            // 'rating' has no backing column; fallback handled below
+        ];
+        $column = $columnMap[$sortBy] ?? 'scheduled_date';
+
+        $applySorting = function ($q) use ($column, $sortDir) {
+            // Primary sort by selected column and direction
+            if ($column !== 'rating') {
+                $q->orderBy($column, $sortDir);
             } else {
-                $q->orderByDesc('scheduled_date')
-                    ->orderBy('starts_at');
+                // find the rating of the teacher from teacher->ratings
+                
+            }
+            // Secondary ordering for deterministic listing
+            if ($column !== 'scheduled_date') {
+                $q->orderByDesc('scheduled_date');
+            }
+            if ($column !== 'starts_at') {
+                $q->orderBy('starts_at');
             }
         };
 
@@ -211,6 +232,27 @@ class ClassroomController extends Controller
             'message' => 'Classroom created successfully',
             'classroom' => $classRoom,
             // ->load('notes'),
+        ], 201);
+    }
+
+    public function cancel(Classroom $classroom)
+    {
+        $classroom->update([
+            'status' => 'cancelled',
+        ]);
+
+        // create a notification for every student
+        $classroom->students()->each(function ($student) use ($classroom) {
+            Notification::create([
+                'user_id' => $student->id,
+                'type' => NotificationType::CLASSROOM_CANCELLED,
+                'classroom_id' => $classroom->id,
+            ]);
+        });
+
+        return redirect()->route('classroom.show', $classroom)->with([
+            'success' => true,
+            'message' => 'Classroom cancelled successfully',
         ], 201);
     }
 

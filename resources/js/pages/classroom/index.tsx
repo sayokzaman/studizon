@@ -9,6 +9,14 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFetchList } from '@/hooks/use-fetch-list';
 import AppLayout from '@/layouts/app-layout';
@@ -40,6 +48,8 @@ type Props = {
         starts_at?: string;
         ends_at?: string;
         course_ids: string[];
+        sort_by?: string;
+        sort_dir?: string;
         per_page?: number;
     };
 };
@@ -67,6 +77,8 @@ const ClassroomIndex = ({
         starts_at: initialFilters?.starts_at ?? '',
         ends_at: initialFilters?.ends_at ?? '',
         course_ids: initialFilters?.course_ids ?? [],
+        sort_by: initialFilters?.sort_by ?? '',
+        sort_dir: initialFilters?.sort_dir ?? 'asc',
         per_page: initialFilters?.per_page ?? 20,
     });
 
@@ -91,6 +103,8 @@ const ClassroomIndex = ({
                 starts_at: filters.starts_at,
                 ends_at: filters.ends_at,
                 course_ids: filters.course_ids,
+                sort_by: filters.sort_by,
+                sort_dir: filters.sort_dir,
                 per_page: filters.per_page,
             },
             { preserveScroll: true, preserveState: true, replace: true },
@@ -120,6 +134,8 @@ const ClassroomIndex = ({
                 starts_at: appliedFilters?.starts_at ?? '',
                 ends_at: appliedFilters?.ends_at ?? '',
                 course_ids: appliedFilters?.course_ids ?? [],
+                sort_by: appliedFilters?.sort_by ?? '',
+                sort_dir: appliedFilters?.sort_dir ?? 'asc',
                 per_page: appliedFilters?.per_page ?? 20,
             };
 
@@ -308,6 +324,73 @@ const ClassroomIndex = ({
                                     </div>
                                 </div>
 
+                                <div className="flex items-center gap-4">
+                                    <Label className="text-nowrap">
+                                        Sort By
+                                    </Label>
+                                    <Select
+                                        defaultValue="scheduled_date"
+                                        value={filters.sort_by}
+                                        onValueChange={(value) =>
+                                            setFilters({
+                                                ...filters,
+                                                sort_by: value,
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Sort By" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="scheduled_date">
+                                                Scheduled Date
+                                            </SelectItem>
+                                            <SelectItem value="created_at">
+                                                Date Created
+                                            </SelectItem>
+                                            <SelectItem value="credits">
+                                                Credits
+                                            </SelectItem>
+                                            <SelectItem value="capacity">
+                                                Capacity
+                                            </SelectItem>
+                                            <SelectItem value="rating">
+                                                Rating
+                                            </SelectItem>
+                                            <SelectItem value="starts_at">
+                                                Starts At
+                                            </SelectItem>
+                                            <SelectItem value="ends_at">
+                                                Ends At
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <RadioGroup
+                                    value={filters.sort_dir}
+                                    onValueChange={(value) =>
+                                        setFilters({
+                                            ...filters,
+                                            sort_dir: value,
+                                        })
+                                    }
+                                    defaultValue="asc"
+                                    className="flex justify-center"
+                                >
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="asc" id="asc" />
+                                        <Label htmlFor="asc">Ascending</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem
+                                            value="desc"
+                                            id="desc"
+                                        />
+                                        <Label htmlFor="desc">Descending</Label>
+                                    </div>
+                                </RadioGroup>
+
                                 <div className="flex justify-end gap-2 border-t pt-4">
                                     <Button
                                         variant={'outline'}
@@ -320,6 +403,8 @@ const ClassroomIndex = ({
                                                 starts_at: '',
                                                 ends_at: '',
                                                 course_ids: [],
+                                                sort_by: '',
+                                                sort_dir: 'asc',
                                                 per_page: filters.per_page,
                                             });
                                             router.get(

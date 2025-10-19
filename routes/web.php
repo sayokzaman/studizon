@@ -6,6 +6,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\LiveClassController;
 use App\Http\Controllers\LivekitController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileSetupController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RatingController;
@@ -42,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('classroom/{classroom}/join', [ClassroomController::class, 'join'])->name('classroom.join');
         Route::post('classroom/{classroom}/leave', [ClassroomController::class, 'leaveClass'])
             ->name('classroom.leave');
+        Route::post('classroom/{classroom}/cancel', [ClassroomController::class, 'cancel'])->name('classroom.cancel');
 
         Route::post('/classrooms/{classroom}/start', [LiveClassController::class, 'start'])->name('classroom.start');
         Route::post('/classrooms/{classroom}/end', [LiveClassController::class, 'end'])->name('classroom.end');
@@ -63,6 +65,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/people', [UserController::class, 'index'])->name('user.index');
         Route::get('/people/{user}', [UserController::class, 'show'])->name('user.show');
         Route::post('/rating', [RatingController::class, 'store'])->name('user.rating');
+
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     });
 
     Route::get('get-departments', [DepartmentController::class, 'getDepartments'])->name('getDepartments');

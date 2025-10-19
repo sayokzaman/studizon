@@ -1,5 +1,6 @@
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import NotificationDialog from '@/components/notifications-dialog';
 import {
     Sidebar,
     SidebarContent,
@@ -13,7 +14,9 @@ import {
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { SharedData, type NavItem } from '@/types';
+import type { Notification } from '@/types/notification';
 import { Link, usePage } from '@inertiajs/react';
+import axios from 'axios';
 import {
     CoinsIcon,
     LayoutGrid,
@@ -22,6 +25,8 @@ import {
     UserRoundPlusIcon,
     Users,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { route } from 'ziggy-js';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -63,6 +68,23 @@ const mainNavItems: NavItem[] = [
 export function AppSidebar() {
     const { state } = useSidebar();
     const { auth } = usePage<SharedData>().props;
+
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const response = await axios.get<{
+                    notifications: Notification[];
+                }>(route('notifications.index'));
+                setNotifications(response.data.notifications);
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+            }
+        };
+
+        fetchNotifications();
+    }, []);
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -120,6 +142,7 @@ export function AppSidebar() {
                         </span>
                     </div>
                 </div>
+                <NotificationDialog notifications={notifications} />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

@@ -1,14 +1,5 @@
 import Countdown from '@/components/countdown';
 import StarRating from '@/components/star-rating';
-import {
-    AlertDialog,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +19,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { route } from 'ziggy-js';
 
+import ClassLeaveDialog from '@/components/class-leave-dialog';
 import { RatingDialog } from '@/components/rating-dialog';
 import { format } from 'date-fns';
 
@@ -54,8 +46,6 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
 
     const { post } = useForm();
 
-    const [openLeaveModal, setOpenLeaveModal] = useState(false);
-
     const startsAtDate = useMemo(() => {
         return classroom.starts_at
             ? new Date(
@@ -77,15 +67,6 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
 
         return () => clearInterval(interval);
     }, [startsAtDate]);
-
-    const handleLeave = () => {
-        post(route('classroom.leave', classroom.id), {
-            onSuccess: () => {
-                // Optionally, you can refresh the page or update the state to reflect the changes
-                // window.location.reload();
-            },
-        });
-    };
 
     const handleStartClass = () => {
         post(route('classroom.start', classroom.id), {
@@ -213,12 +194,7 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
                                     </Button>
                                 )}
 
-                                <Button
-                                    variant="destructive"
-                                    onClick={() => setOpenLeaveModal(true)}
-                                >
-                                    Leave Classroom
-                                </Button>
+                                <ClassLeaveDialog classroom={classroom} />
                             </>
                         ) : !classroom.is_rated ? (
                             classroom.teacher_id !== user.id ? (
@@ -436,26 +412,6 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
                     </div>
                 </div>
             </main>
-
-            <AlertDialog open={openLeaveModal} onOpenChange={setOpenLeaveModal}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Are you sure you want leave this class?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            remove all your data from the classroom.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <Button onClick={handleLeave} variant={'destructive'}>
-                            Leave
-                        </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
 
             <RatingDialog
                 classroom={classroom}

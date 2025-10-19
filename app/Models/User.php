@@ -152,4 +152,9 @@ class User extends Authenticatable
 
         return $authUser->following()->where('following_id', $this->id)->exists();
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
 }

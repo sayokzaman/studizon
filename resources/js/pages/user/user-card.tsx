@@ -58,7 +58,7 @@ export default function UserCard({ user }: Props) {
                     <div className="flex w-1/2 flex-col items-end">
                         <Badge className="h-fit w-fit">BSCSE</Badge>
                         <div className="w-1/2">
-                            <StarRating rating={3.5} readonly />
+                            <StarRating rating={user.rating} readonly />
                         </div>
                     </div>
                 </div>

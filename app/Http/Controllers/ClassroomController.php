@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class ClassroomController extends Controller
 {
@@ -82,8 +83,16 @@ class ClassroomController extends Controller
             if ($column !== 'rating') {
                 $q->orderBy($column, $sortDir);
             } else {
-                // find the rating of the teacher from teacher->ratings
-                
+                // find the avg rating of the classroom teacher from teacher->ratings
+                $ratingSub = DB::table('ratings')
+                    ->select('user_id', DB::raw('AVG(rating) as teacher_avg_rating'))
+                    ->groupBy('user_id');
+
+                $q->leftJoinSub($ratingSub, 'teacher_ratings', function ($join) {
+                    $join->on('teacher_ratings.user_id', '=', 'classrooms.teacher_id');
+                })
+                    ->select('classrooms.*')
+                    ->orderByRaw('COALESCE(teacher_ratings.teacher_avg_rating, 0) '.($sortDir === 'desc' ? 'DESC' : 'ASC'));
             }
             // Secondary ordering for deterministic listing
             if ($column !== 'scheduled_date') {

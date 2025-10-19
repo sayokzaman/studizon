@@ -122,7 +122,10 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
                                 </Link>
 
                                 <div className="w-20">
-                                    <StarRating rating={user.rating} readonly />
+                                    <StarRating
+                                        rating={classroom.teacher?.rating || 0}
+                                        readonly
+                                    />
                                 </div>
                             </div>
                         </div>

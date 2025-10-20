@@ -1,6 +1,7 @@
 import { ClassRoomCard } from '@/components/class-room-card';
 import { DatePicker } from '@/components/date-picker';
 import { MultiSelect } from '@/components/multi-select';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,7 +79,7 @@ const ClassroomIndex = ({
         ends_at: initialFilters?.ends_at ?? '',
         course_ids: initialFilters?.course_ids ?? [],
         sort_by: initialFilters?.sort_by ?? '',
-        sort_dir: initialFilters?.sort_dir ?? 'asc',
+        sort_dir: initialFilters?.sort_dir ?? 'desc',
         per_page: initialFilters?.per_page ?? 20,
     });
 
@@ -135,7 +136,7 @@ const ClassroomIndex = ({
                 ends_at: appliedFilters?.ends_at ?? '',
                 course_ids: appliedFilters?.course_ids ?? [],
                 sort_by: appliedFilters?.sort_by ?? '',
-                sort_dir: appliedFilters?.sort_dir ?? 'asc',
+                sort_dir: appliedFilters?.sort_dir ?? 'desc',
                 per_page: appliedFilters?.per_page ?? 20,
             };
 
@@ -375,7 +376,6 @@ const ClassroomIndex = ({
                                             sort_dir: value,
                                         })
                                     }
-                                    defaultValue="asc"
                                     className="flex justify-center"
                                 >
                                     <div className="flex items-center space-x-2">
@@ -404,7 +404,7 @@ const ClassroomIndex = ({
                                                 ends_at: '',
                                                 course_ids: [],
                                                 sort_by: '',
-                                                sort_dir: 'asc',
+                                                sort_dir: 'desc',
                                                 per_page: filters.per_page,
                                             });
                                             router.get(
@@ -443,24 +443,35 @@ const ClassroomIndex = ({
                     onValueChange={setActiveTab}
                     className="justify-center px-6"
                 >
-                    <TabsList className="flex w-full justify-center gap-6 border bg-muted-foreground/10 p-0">
+                    <TabsList className="flex w-full justify-center gap-6 border bg-muted-foreground/10 p-0 overflow-hidden">
                         <TabsTrigger
                             value="explore"
                             className="h-10 cursor-pointer border-0"
                         >
                             Explore
+                            <Badge className="h-5 px-1 font-bold">
+                                {classrooms.data ? classrooms.data.length : 0}
+                            </Badge>
                         </TabsTrigger>
                         <TabsTrigger
                             value="joined"
                             className="h-10 cursor-pointer border-0"
                         >
                             Joined
+                            <Badge className="h-5 px-1 font-bold">
+                                {joinedClasses.data
+                                    ? joinedClasses.data.length
+                                    : 0}
+                            </Badge>
                         </TabsTrigger>
                         <TabsTrigger
                             value="myClasses"
                             className="h-10 cursor-pointer border-0"
                         >
                             My Classes
+                            <Badge className="h-5 px-1 font-bold">
+                                {myClasses.data ? myClasses.data.length : 0}
+                            </Badge>
                         </TabsTrigger>
                     </TabsList>
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\LiveClassController;
@@ -29,9 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/setup', [ProfileSetupController::class, 'store'])->name('setup.store');
 
     Route::middleware('completed_profile')->group(function () {
-        Route::get('dashboard', function () {
-            return Inertia::render('dashboard');
-        })->name('dashboard');
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::get('classroom', [ClassroomController::class, 'index'])->name('classroom.index');
         Route::get('classroom/create', [ClassroomController::class, 'create'])->name('classroom.create');

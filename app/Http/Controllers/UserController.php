@@ -73,10 +73,30 @@ class UserController extends Controller
         }
 
         $perPage = (int) ($request->input('per_page', 20));
-        $users = $query->limit(max(1, $perPage))->get();
+
+        $allUsersQuery = clone $query;
+        $followersQuery = clone $query;
+        $followingQuery = clone $query;
+
+        $users = $allUsersQuery->paginate((int) ($request->per_page ?? 20))
+            ->withQueryString();
+
+        $followersQuery = $followersQuery->whereHas('following', function ($q) {
+            $q->where('following_id', Auth::id());
+        });
+
+        $followers = $followersQuery->paginate((int) ($request->per_page ?? 20));
+
+        $followingQuery = $followingQuery->whereHas('followers', function ($q) {
+            $q->where('follower_id', Auth::id());
+        });
+
+        $following = $followingQuery->paginate((int) ($request->per_page ?? 20));
 
         return inertia('user/index', [
             'users' => $users,
+            'followers' => $followers,
+            'following' => $following,
             'filters' => [
                 'search' => (string) $request->input('search', ''),
                 'course_ids' => $courseIds,

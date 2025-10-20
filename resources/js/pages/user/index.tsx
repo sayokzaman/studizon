@@ -7,17 +7,21 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFetchList } from '@/hooks/use-fetch-list';
 import AppLayout from '@/layouts/app-layout';
 import UserCard from '@/pages/user/user-card';
 import { BreadcrumbItem, User } from '@/types';
 import { Course } from '@/types/course';
+import { Paginated } from '@/types/paginate';
 import { Head, router } from '@inertiajs/react';
 import { ListFilterIcon } from 'lucide-react';
 import { useState } from 'react';
 
 type Props = {
-    users: User[];
+    users: Paginated<User>;
+    followers: Paginated<User>;
+    following: Paginated<User>;
     filters: {
         search: string;
         course_ids: number[];
@@ -41,7 +45,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const UserIndex = ({ users, filters: initialFilters }: Props) => {
+const UserIndex = ({
+    users,
+    followers,
+    following,
+    filters: initialFilters,
+}: Props) => {
     const [searchCourse, setSearchCourse] = useState('');
     const { data: courses } = useFetchList<Course, { program_id: number }>({
         url: '/get-courses',
@@ -281,11 +290,49 @@ const UserIndex = ({ users, filters: initialFilters }: Props) => {
                     <div />
                 </div>
 
-                <div className="grid w-full max-w-7xl gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    {users.map((user) => (
-                        <UserCard user={user} />
-                    ))}
-                </div>
+                <Tabs defaultValue="all" className="w-full max-w-7xl gap-6">
+                    <TabsList className="w-full">
+                        <TabsTrigger className="cursor-pointer" value="all">
+                            All
+                        </TabsTrigger>
+                        <TabsTrigger
+                            className="cursor-pointer"
+                            value="followers"
+                        >
+                            Followers
+                        </TabsTrigger>
+                        <TabsTrigger
+                            className="cursor-pointer"
+                            value="following"
+                        >
+                            Following
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent
+                        value="all"
+                        className="grid w-full gap-8 md:grid-cols-2 lg:grid-cols-3"
+                    >
+                        {users.data.map((user) => (
+                            <UserCard user={user} />
+                        ))}
+                    </TabsContent>
+                    <TabsContent
+                        value="followers"
+                        className="grid w-full gap-8 md:grid-cols-2 lg:grid-cols-3"
+                    >
+                        {followers.data.map((user) => (
+                            <UserCard user={user} />
+                        ))}
+                    </TabsContent>
+                    <TabsContent
+                        value="following"
+                        className="grid w-full gap-8 md:grid-cols-2 lg:grid-cols-3"
+                    >
+                        {following.data.map((user) => (
+                            <UserCard user={user} />
+                        ))}
+                    </TabsContent>
+                </Tabs>
             </main>
         </AppLayout>
     );

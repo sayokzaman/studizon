@@ -98,4 +98,9 @@ class Classroom extends Model
         // is rated by the current user
         return $this->ratings()->where('user_id', Auth::user()->id)->exists();
     }
+
+    public function classroomAttachments()
+    {
+        return $this->hasMany(ClassroomAttachment::class);
+    }
 }

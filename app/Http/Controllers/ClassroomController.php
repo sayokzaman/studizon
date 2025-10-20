@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
+use App\Models\ClassroomAttachment;
 use App\Models\Notification;
 use App\NotificationType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ClassroomController extends Controller
 {
@@ -62,8 +63,9 @@ class ClassroomController extends Controller
         });
 
         // Sorting: support UI options (scheduled_date, created_at, credits, capacity, rating, starts_at, ends_at)
-        $sortBy = (string) $request->input('sort_by', 'scheduled_date');
-        $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        // Default to latest classes first
+        $sortBy = (string) $request->input('sort_by', 'created_at');
+        $sortDir = strtolower((string) $request->input('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         // Map UI value -> actual column
         $columnMap = [
@@ -152,7 +154,7 @@ class ClassroomController extends Controller
         $fromEnd = Auth::user()->id !== $classroom->teacher_id && request()->query('from') === 'end_class' ? true : false;
 
         return inertia('classroom/show', [
-            'classroom' => $classroom->load('students.program', 'teacher', 'course.program'),
+            'classroom' => $classroom->load('students.program', 'teacher', 'course.program', 'classroomAttachments'),
             'openRatingModal' => $fromEnd,
         ]);
     }
@@ -219,23 +221,23 @@ class ClassroomController extends Controller
             // status defaults to "scheduled" from migration
         ]);
 
-        // ✅ 4. Store notes if any were uploaded
-        // if ($request->hasFile('notes')) {
-        //     foreach ($request->file('notes') as $note) {
-        //         $path = $note->store('classroom_notes', 'public');
+        // Store attachments (notes) if any were uploaded
+        if ($request->hasFile('notes')) {
+            foreach ((array) $request->file('notes') as $file) {
+                if (! $file) {
+                    continue;
+                }
+                $storedPath = $file->store('classroom_attachments', 'public');
+                ClassroomAttachment::create([
+                    'classroom_id' => $classRoom->id,
+                    'path' => $storedPath,
+                    'type' => (string) $file->getClientOriginalExtension(),
+                    'name' => (string) $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                ]);
+            }
+        }
 
-        //         ClassRoomNote::create([
-        //             'class_room_id' => $classRoom->id,
-        //             'uploaded_by'   => auth()->id(),
-        //             'title'         => pathinfo($note->getClientOriginalName(), PATHINFO_FILENAME),
-        //             'file_path'     => $path,
-        //             'file_type'     => $note->getClientOriginalExtension(),
-        //             'file_size'     => $note->getSize(), // bytes
-        //         ]);
-        //     }
-        // }
-
-        // ✅ 5. Return response
         return redirect()->route('classroom.show', $classRoom)->with([
             'success' => true,
             'message' => 'Classroom created successfully',

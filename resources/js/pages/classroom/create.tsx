@@ -34,7 +34,7 @@ import { BreadcrumbItem } from '@/types';
 import { Course } from '@/types/course';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { File } from 'lucide-react';
+import { File, Upload, X } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -60,7 +60,7 @@ const initialData = {
 };
 
 const CreateClassroom = () => {
-    const { data, setData, post, processing, errors, reset } =
+    const { data, setData, post, processing, errors, reset, transform } =
         useForm(initialData);
 
     const [searchCourse, setSearchCourse] = useState('');
@@ -76,6 +76,7 @@ const CreateClassroom = () => {
     >({
         url: '/get-courses',
         params: { only_user_program: true },
+
         search: searchCourse,
     });
 
@@ -83,11 +84,20 @@ const CreateClassroom = () => {
 
     const handleNotesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newFiles = Array.from(e.target.files).map((file) => ({
+            const incoming = Array.from(e.target.files);
+            // Avoid duplicates by file name + size
+            const existingKeys = new Set(
+                data.notes.map((n) => `${n.file.name}-${n.file.size}`),
+            );
+            const newFiles = incoming
+                .filter((f) => !existingKeys.has(`${f.name}-${f.size}`))
+                .map((file) => ({
                 file,
                 progress: 0,
             }));
             setData('notes', [...data.notes, ...newFiles]);
+            // reset the input so re-selecting the same file triggers change
+            e.currentTarget.value = '';
 
             // Fake upload simulation
             newFiles.forEach((note) => {
@@ -148,9 +158,40 @@ const CreateClassroom = () => {
         );
         setData('starts_at', startsAt);
         setData('ends_at', endsAt);
+        // Ensure files are sent as FormData: map notes to an array of File
+        transform((d) => ({
+            ...d,
+            notes: d.notes.map((n) => n.file),
+        }));
         post('/classroom', {
+            forceFormData: true,
+            onProgress: (progress) => {
+                const loaded = progress?.loaded ?? 0;
+                const total = progress?.total ?? 0;
+                const notes = data.notes;
+                if (notes.length === 0) return;
+                const sizes = notes.map((n) => n.file.size || 0);
+                const sumSizes = sizes.reduce((a, b) => a + b, 0);
+                // Scale loaded bytes to file-bytes domain to offset form overhead
+                const scaledLoaded = total && sumSizes
+                    ? Math.min(sumSizes, Math.round((loaded * sumSizes) / total))
+                    : Math.min(loaded, sumSizes);
+                let remaining = scaledLoaded;
+                const updated = notes.map((n, i) => {
+                    const sz = sizes[i] || 1; // avoid div by zero
+                    const fileLoaded = Math.max(0, Math.min(sz, remaining));
+                    remaining -= fileLoaded;
+                    const pct = Math.max(0, Math.min(100, Math.round((fileLoaded / sz) * 100)));
+                    return { file: n.file, progress: pct };
+                });
+                setData('notes', updated);
+            },
             onSuccess: () => {
                 reset();
+            },
+            onFinish: () => {
+                // Clear transform so future form usage isn't affected
+                transform((d) => d);
             },
         });
     };
@@ -306,6 +347,30 @@ const CreateClassroom = () => {
                         </CardContent>
                     </Card>
 
+                    <Card>
+                        <CardContent>
+                            <label className="mb-1 block text-sm font-medium">
+                                Thumbnail
+                            </label>
+
+                            <CoverImageInput
+                                initialImage={imagePreview} // show existing product image when editing
+                                onChange={(file, previewUrl) => {
+                                    // file + preview from the component
+                                    setData('thumbnail', file); // ✅ Inertia will send this file
+                                    setImagePreview(previewUrl ?? '');
+                                }}
+                                aspectClass={
+                                    isMobile ? 'aspect-[5/2]' : 'aspect-auto'
+                                }
+                            />
+                            <InputError
+                                message={errors.thumbnail}
+                                className="text-xs"
+                            />
+                        </CardContent>
+                    </Card>
+
                     <Card className="flex-row">
                         <CardHeader className="w-4/12">
                             <CardTitle>Classroom Details</CardTitle>
@@ -362,7 +427,10 @@ const CreateClassroom = () => {
 
                             <div>
                                 <label className="mb-1 block text-sm font-medium">
-                                    Classroom link
+                                    Classroom link{' '}
+                                    <span className="text-muted-foreground">
+                                        (Optional)
+                                    </span>
                                 </label>
                                 <Input
                                     value={data.join_link}
@@ -379,33 +447,71 @@ const CreateClassroom = () => {
                         </CardContent>
                     </Card>
 
-                    <div className="flex gap-6">
-                        <Card className="w-4/12">
-                            <CardContent>
-                                <label className="mb-1 block text-sm font-medium">
-                                    Thumbnail
-                                </label>
-
-                                <CoverImageInput
-                                    initialImage={imagePreview} // show existing product image when editing
-                                    onChange={(file, previewUrl) => {
-                                        // file + preview from the component
-                                        setData('thumbnail', file); // ✅ Inertia will send this file
-                                        setImagePreview(previewUrl ?? '');
-                                    }}
-                                    aspectClass={
-                                        isMobile
-                                            ? 'aspect-[5/2]'
-                                            : 'aspect-[2/1]'
-                                    }
+                    <Card>
+                        <CardContent>
+                            <label className="mb-1 block text-sm font-medium">
+                                Notes Files
+                            </label>
+                            <div className="rounded-xl border-1 border-dashed p-6 text-center">
+                                <Upload className="mx-auto mb-2 h-8 w-8 text-gray-500" />
+                                <p className="text-sm text-gray-600">
+                                    Drag & drop or click to upload notes
+                                </p>
+                                <Input
+                                    type="file"
+                                    multiple
+                                    name="notes[]"
+                                    onChange={handleNotesChange}
+                                    className="mt-2"
                                 />
                                 <InputError
-                                    message={errors.thumbnail}
+                                    message={errors.notes}
                                     className="text-xs"
                                 />
-                            </CardContent>
-                        </Card>
-                    </div>
+                            </div>
+
+                            <div className="mt-4 space-y-3">
+                                {data.notes.map((note) => (
+                                    <div
+                                        key={note.file.name}
+                                        className="flex items-center justify-between rounded-lg border p-3"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <File className="h-5 w-5 text-gray-500" />
+                                            <div>
+                                                <p className="text-sm font-medium">
+                                                    {note.file.name}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {(
+                                                        note.file.size /
+                                                        1024 /
+                                                        1024
+                                                    ).toFixed(1)}{' '}
+                                                    MB
+                                                </p>
+                                                <div className="mt-1 h-1 rounded bg-gray-200">
+                                                    <div
+                                                        className="h-1 rounded bg-primary"
+                                                        style={{
+                                                            width: `${note.progress}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() =>
+                                                removeNote(note.file.name)
+                                            }
+                                        >
+                                            <X className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     <Card className="flex-row">
                         <CardHeader className="w-4/12">
@@ -514,88 +620,6 @@ const CreateClassroom = () => {
                     </Button>
                 </form>
             </main>
-
-            {/* <div className="min-h-screen bg-background p-4 text-foreground">
-                <nav className="p-4 shadow-md">
-                    <h1 className="flex justify-center text-xl font-bold">
-                        <b>CREATE CLASS-ROOM</b>
-                    </h1>
-                </nav>
-
-                <form
-                    onSubmit={handleSubmit}
-                    className="mx-auto mt-4 max-w-3xl space-y-6 rounded-2xl bg-card p-6 shadow"
-                >
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">
-                            Notes Files
-                        </label>
-                        <div className="rounded-xl border-1 border-dashed p-6 text-center">
-                            <Upload className="mx-auto mb-2 h-8 w-8 text-gray-500" />
-                            <p className="text-sm text-gray-600">
-                                Drag & drop or click to upload notes
-                            </p>
-                            <Input
-                                type="file"
-                                multiple
-                                onChange={handleNotesChange}
-                                className="mt-2"
-                            />
-                            <InputError
-                                message={errors.notes}
-                                className="text-xs"
-                            />
-                        </div>
-
-                        <div className="mt-4 space-y-3">
-                            {data.notes.map((note) => (
-                                <div
-                                    key={note.file.name}
-                                    className="flex items-center justify-between rounded-lg border p-3"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <File className="h-5 w-5 text-gray-500" />
-                                        <div>
-                                            <p className="text-sm font-medium">
-                                                {note.file.name}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {(
-                                                    note.file.size /
-                                                    1024 /
-                                                    1024
-                                                ).toFixed(1)}{' '}
-                                                MB
-                                            </p>
-                                            <div className="mt-1 h-1 rounded bg-gray-200">
-                                                <div
-                                                    className="h-1 rounded bg-primary"
-                                                    style={{
-                                                        width: `${note.progress}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() =>
-                                            removeNote(note.file.name)
-                                        }
-                                    >
-                                        <X className="h-5 w-5 text-gray-500 hover:text-red-500" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    
-
-                    <Button type="submit" className="w-full">
-                        Create Classroom
-                    </Button>
-                </form>
-            </div> */}
         </AppLayout>
     );
 };

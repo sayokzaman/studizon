@@ -6,10 +6,9 @@ import { Label } from '@/components/ui/label';
 import { WeeklyClassesChart } from '@/components/weekly-class-chart';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
+import { SharedData, type BreadcrumbItem } from '@/types';
 import { ClassRoom } from '@/types/classroom';
-import { Head, Link } from '@inertiajs/react';
-import { CoinsIcon } from 'lucide-react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -33,15 +32,19 @@ export default function Dashboard({
     joinedClassesToday,
     classesPerDay,
 }: Props) {
+    const user = usePage<SharedData>().props.auth.user;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <Label className="text-xl font-semibold">Welcome User!</Label>
+                <Label className="text-xl font-semibold">
+                    Welcome {user.name}!
+                </Label>
                 <span className="mt-1 text-base text-nowrap text-muted-foreground sm:mt-0">
                     Here’s your overview for for this week.
                 </span>
-                <div className="grid auto-rows-min gap-4 md:grid-cols-4">
+                {/* <div className="grid auto-rows-min gap-4 md:grid-cols-4">
                     <Card className="flex flex-col justify-between gap-2 py-2.5">
                         <CardHeader className="flex flex-row items-center justify-between px-3">
                             <CardTitle className="text-sm font-medium">
@@ -50,7 +53,7 @@ export default function Dashboard({
                             <CoinsIcon className="h-6 w-6 text-yellow-500" />
                         </CardHeader>
                         <CardContent className="flex justify-between px-3 text-xl font-bold">
-                            {/* <p>{classesTaken}</p> */}
+                            <p>{classesTaken}</p>
                         </CardContent>
                     </Card>
                     <Card className="flex flex-col justify-between gap-2 py-2.5">
@@ -86,7 +89,7 @@ export default function Dashboard({
                             <p>$0</p>
                         </CardContent>
                     </Card>
-                </div>
+                </div> */}
 
                 <div className="grid auto-rows-min gap-4 md:grid-cols-4">
                     <Calendar
@@ -174,16 +177,16 @@ export default function Dashboard({
                                 <CardContent className="flex items-center gap-2 px-4">
                                     <p className="text-sm">#1</p>
                                     <img
-                                        src="https://images.unsplash.com/photo-1499714608240-22fc6ad53fb2?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=76&q=80"
+                                        src="https://avatar.iran.liara.run/public"
                                         alt=""
                                         className="h-12 w-12 rounded-full object-cover"
                                     />
                                     <div>
                                         <p className="text-sm font-semibold">
-                                            Username
+                                            Prof. Jamaal Corkery Jr.
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            email.email.com
+                                            corkery@email.com
                                         </p>
                                     </div>
                                 </CardContent>
@@ -193,22 +196,41 @@ export default function Dashboard({
                                 <CardContent className="flex items-center gap-2 px-4">
                                     <p className="text-sm">#2</p>
                                     <img
-                                        src="https://images.unsplash.com/photo-1499714608240-22fc6ad53fb2?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=76&q=80"
+                                        src="https://avatar.iran.liara.run/public"
                                         alt=""
                                         className="h-12 w-12 rounded-full object-cover"
                                     />
                                     <div>
                                         <p className="text-sm font-semibold">
-                                            Username
+                                            Abelardo Schuster PhD
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            email.email.com
+                                            schuster@email.com
                                         </p>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                            <Card className="border-0 bg-muted py-4">
+                                <CardContent className="flex items-center gap-2 px-4">
+                                    <p className="text-sm">#3</p>
+                                    <img
+                                        src="https://avatar.iran.liara.run/public"
+                                        alt=""
+                                        className="h-12 w-12 rounded-full object-cover"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold">
+                                            Rigoberto Rohan IV
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            rigoberto@email.com
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* <p className="mt-1 text-sm font-semibold text-muted-foreground">
                                 Most Followed
                             </p>
 
@@ -218,7 +240,7 @@ export default function Dashboard({
 
                             <p className="mt-1 text-sm font-semibold text-muted-foreground">
                                 Top Learners
-                            </p>
+                            </p> */}
                         </CardContent>
                     </Card>
 

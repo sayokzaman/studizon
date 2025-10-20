@@ -6,6 +6,7 @@ use App\Models\Classroom;
 use App\Models\Course;
 use App\Models\Department;
 use App\Models\Program;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class PopulateDatabaseSeeder extends Seeder
@@ -74,6 +75,18 @@ class PopulateDatabaseSeeder extends Seeder
                 }
 
                 $courses = Course::all()->where('program_id', $program->id);
+
+                $user = User::factory(10)->create(
+                    [
+                        'program_id' => Program::inRandomOrder()->first()->id,
+                        'credits' => 500,
+                        'profile_completed' => true,
+                    ]
+                );
+
+                $user->each(function ($user) use ($courses) {
+                    $user->courses()->attach($courses->random(3)->pluck('id')->toArray());
+                });
 
                 foreach ($courses as $course) {
                     // create classrooms for each course

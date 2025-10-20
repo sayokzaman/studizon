@@ -79,8 +79,8 @@ const ProfileSetup = () => {
 
     return (
         <AuthLayout
-            title="Create an account"
-            description="Enter your details below to create your account"
+            title="Account created successfully"
+            description="Successfully created your account. Please complete your profile setup."
         >
             <Head title="Register" />
             <div className="w-full max-w-md">

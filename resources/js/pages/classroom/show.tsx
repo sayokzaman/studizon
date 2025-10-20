@@ -86,15 +86,18 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
         });
     };
 
+    const randomInt = (min: number, max: number) => {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Classroom - ${classroom.topic}`} />
             <div className="relative border-b">
                 <img
                     src={
-                        (classroom.thumbnail_path &&
-                            `/${classroom.thumbnail_path}`) ||
-                        '/thumbnail-placeholder.jpg'
+                        classroom.thumbnail_path ||
+                        `/thumbnail-placeholder/${randomInt(1, 6)}.jpg`
                     }
                     alt={classroom?.topic}
                     className="absolute inset-0 h-full w-full object-cover"
@@ -128,7 +131,7 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
                                 src={
                                     classroom.teacher?.profile_picture
                                         ? `/${classroom.teacher?.profile_picture}`
-                                        : "https://avatar.iran.liara.run/public"
+                                        : 'https://avatar.iran.liara.run/public'
                                 }
                                 alt={classroom.teacher?.name}
                             />

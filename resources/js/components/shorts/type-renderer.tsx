@@ -115,7 +115,7 @@ export default function TypeRenderer({ short, seconds, onNext }: Props) {
                                     className={cn(
                                         'h-10 w-full justify-start rounded-md bg-black/40 px-4 text-lg font-medium text-white/90 capitalize transition-colors duration-300 ease-in-out hover:bg-black/70',
                                         correct === idx
-                                            ? 'bg-primary hover:bg-primary/90'
+                                            ? 'bg-green-500 hover:bg-green-600'
                                             : selected === idx &&
                                                 correct !== idx
                                               ? 'bg-destructive hover:bg-destructive/90'

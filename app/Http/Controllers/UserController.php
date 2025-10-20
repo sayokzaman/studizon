@@ -111,7 +111,7 @@ class UserController extends Controller
 
     public function show(Request $request, User $user)
     {
-        $user->load('program', 'program.department', 'courses', 'followers', 'followers.followerUser', 'following', 'following.followingUser', 'classrooms', 'shorts', 'shorts.creator', 'shorts.course');
+        $user->load('program', 'program.department', 'courses', 'followers', 'followers.followerUser', 'following', 'following.followingUser', 'classrooms', 'shorts', 'shorts.creator', 'shorts.course', 'notes');
 
         return inertia('user/show', [
             'user' => $user,

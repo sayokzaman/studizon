@@ -67,6 +67,11 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
         });
     };
 
+    // random value between one to six
+    const randomInt = (min: number, max: number) => {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+
     return (
         <Card className="flex flex-col justify-between gap-0 overflow-hidden rounded-2xl p-0 pb-3 shadow transition-all duration-300 hover:scale-101 hover:shadow-2xl">
             <CardHeader className="gap-1 px-0">
@@ -74,7 +79,7 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
                     <img
                         src={
                             classroom.thumbnail_path ||
-                            '/thumbnail-placeholder.jpg'
+                            `/thumbnail-placeholder/${randomInt(1, 6)}.jpg`
                         }
                         alt={classroom.topic}
                         className="h-28 w-full object-cover"
@@ -101,7 +106,7 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
                                     src={
                                         classroom.teacher?.profile_picture
                                             ? `/${classroom.teacher?.profile_picture}`
-                                            : "https://avatar.iran.liara.run/public"
+                                            : 'https://avatar.iran.liara.run/public'
                                     }
                                     alt={classroom.teacher?.name}
                                 />

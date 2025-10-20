@@ -144,7 +144,7 @@ export function AppSidebar() {
                             }
                         >
                             {auth.user.credits ?? 0}
-                            {state !== 'collapsed' && ' Followers'}
+                            {state !== 'collapsed' && ' Credits'}
                         </span>
                     </div>
                 </div>

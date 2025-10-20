@@ -134,11 +134,12 @@ class User extends Authenticatable
     }
 
     public function getRatingAttribute(): float
-    {   
-        // get average rating if exists 
+    {
+        // get average rating if exists
         if ($this->ratings()->exists()) {
             return $this->ratings()->avg('rating');
         }
+
         return 0.0;
     }
 
@@ -157,5 +158,10 @@ class User extends Authenticatable
     public function notifications()
     {
         return $this->hasMany(Notification::class);
+    }
+
+    public function notes()
+    {
+        return $this->hasMany(Note::class);
     }
 }

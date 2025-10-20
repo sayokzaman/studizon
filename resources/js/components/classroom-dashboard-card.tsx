@@ -20,6 +20,10 @@ export const ClassroomDashboardCard: React.FC<Props> = ({
 }) => {
     const { auth } = usePage<SharedData>().props;
     const user = userProp ? userProp : auth.user;
+
+    const randomInt = (min: number, max: number) => {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
     return (
         <Card className="flex min-w-xs flex-col justify-between gap-0 overflow-hidden rounded-2xl p-0 pb-3 shadow transition-all duration-300 hover:scale-101 hover:shadow-2xl">
             <CardHeader className="gap-1 px-0">
@@ -27,7 +31,7 @@ export const ClassroomDashboardCard: React.FC<Props> = ({
                     <img
                         src={
                             classroom.thumbnail_path ||
-                            '/thumbnail-placeholder.jpg'
+                            `/thumbnail-placeholder/${randomInt(1, 6)}.jpg`
                         }
                         alt={classroom.topic}
                         className="h-28 w-full object-cover"
@@ -54,7 +58,7 @@ export const ClassroomDashboardCard: React.FC<Props> = ({
                                 <AvatarImage
                                     src={
                                         classroom.teacher?.profile_picture ||
-                                        "https://avatar.iran.liara.run/public"
+                                        'https://avatar.iran.liara.run/public'
                                     }
                                     alt={classroom.teacher?.name}
                                 />

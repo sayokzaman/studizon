@@ -1,4 +1,5 @@
 import { ClassRoomCard } from '@/components/class-room-card';
+import NoteCard from '@/components/note-card';
 import ShortCard from '@/components/shorts/short-card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +67,7 @@ const UserShow = ({ user }: Props) => {
                                 src={
                                     user.profile_picture
                                         ? `/${user.profile_picture}`
-                                        : "https://avatar.iran.liara.run/public"
+                                        : 'https://avatar.iran.liara.run/public'
                                 }
                                 alt={user.name}
                             />
@@ -265,10 +266,14 @@ const UserShow = ({ user }: Props) => {
 
                     {/* Notes (Replaced Content) */}
                     <TabsContent value="saved">
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            <p className="mt-10 text-center text-lg">
-                                No notes yet.
-                            </p>
+                        <div className="grid gap-6">
+                            {user.notes && user.notes.length > 0
+                                ? user.notes.map((note) => (
+                                      <div key={note.id}>
+                                          <NoteCard note={note} />
+                                      </div>
+                                  ))
+                                : 'No notes'}
                         </div>
                     </TabsContent>
                 </Tabs>

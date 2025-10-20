@@ -7,6 +7,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\LiveClassController;
 use App\Http\Controllers\LivekitController;
+use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileSetupController;
 use App\Http\Controllers\ProgramController;
@@ -66,6 +67,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/rating', [RatingController::class, 'store'])->name('user.rating');
 
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+
+        Route::put('/notes/{note}', [NoteController::class, 'update'])->name('notes.update');
+        Route::delete('/notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
+
+        Route::get('/notes/{note}/download', [NoteController::class, 'download'])
+            ->name('notes.download');
+        Route::get('/notes', [NoteController::class, 'index'])->name('notes.index');
+        Route::get('/notes/create', [NoteController::class, 'create'])->name('notes.create');
+        Route::get('/notes/load-more', [NoteController::class, 'loadMore'])->name('notes.loadMore'); // new
+        Route::put('/notes/{note}', [NoteController::class, 'update'])->name('notes.update');
+        Route::delete('/notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
+
+        Route::post('/notes', [NoteController::class, 'store'])->name('notes.store');
+        Route::get('/notes/{note}', [NoteController::class, 'show'])->name('notes.show');
     });
 
     Route::get('get-departments', [DepartmentController::class, 'getDepartments'])->name('getDepartments');

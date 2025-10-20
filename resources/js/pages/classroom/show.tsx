@@ -1,6 +1,6 @@
 import Countdown from '@/components/countdown';
 import StarRating from '@/components/star-rating';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
@@ -124,11 +124,17 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <Avatar className="h-20 w-20">
-                            <img
-                                src="https://picsum.photos/200/200"
+                            <AvatarImage
+                                src={
+                                    classroom.teacher?.profile_picture
+                                        ? `/${classroom.teacher?.profile_picture}`
+                                        : "https://avatar.iran.liara.run/public"
+                                }
                                 alt={classroom.teacher?.name}
-                                className="h-full w-full object-cover"
                             />
+                            <AvatarFallback>
+                                {classroom.teacher?.name}
+                            </AvatarFallback>
                         </Avatar>
 
                         <div>

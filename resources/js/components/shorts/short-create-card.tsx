@@ -75,10 +75,14 @@ export default function ShortCreateCard({ data, courseName }: Props) {
                     <div className="flex items-center gap-2">
                         <Avatar>
                             <AvatarImage
-                                src="https://avatar.iran.liara.run/public"
+                                src={
+                                    user.profile_picture
+                                        ? `/${user.profile_picture}`
+                                        : 'https://avatar.iran.liara.run/public'
+                                }
                                 alt=""
                             />
-                            <AvatarFallback>'You'</AvatarFallback>
+                            <AvatarFallback>{user.name}</AvatarFallback>
                         </Avatar>
 
                         <div className="flex flex-col">

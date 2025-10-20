@@ -36,7 +36,7 @@ export interface User {
     department_id: number | null;
     credits: number;
     email: string;
-    avatar?: string;
+    profile_picture?: string;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     courses?: Course[];

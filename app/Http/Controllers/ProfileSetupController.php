@@ -18,6 +18,7 @@ class ProfileSetupController extends Controller
             'department.id' => ['required', 'integer', 'exists:departments,id'],
             'program.id' => ['required', 'integer', 'exists:programs,id'],
             'courses' => ['required', 'array', 'min:1'],
+            'profile_picture' => ['nullable', 'image', 'max:2048'], // optional profile picture by me
             'courses.*.id' => ['required', 'integer', 'exists:courses,id'],
         ]);
 
@@ -26,6 +27,11 @@ class ProfileSetupController extends Controller
         $user->update([
             'program_id' => $validated['program']['id'],
         ]);
+
+        if ($request->hasFile('profile_picture')) {
+            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+            $user->profile_picture = $path;
+        }
 
         $user->profile_completed = true;
         $user->save();

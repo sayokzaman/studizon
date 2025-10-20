@@ -4,10 +4,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { CodeOutputPayload, Short } from '@/types/short';
 import { Link, useForm } from '@inertiajs/react';
-import { SearchIcon, Share2Icon, ThumbsUpIcon } from 'lucide-react';
+import {
+    SearchIcon,
+    Share2Icon,
+    ThumbsUpIcon,
+    UserPlusIcon,
+    UserXIcon,
+} from 'lucide-react';
 import { route } from 'ziggy-js';
 
 type Props = {
@@ -17,17 +24,24 @@ type Props = {
 };
 
 const ShortCard = ({ short, onNext, seconds }: Props) => {
-    const { post, processing } = useForm();
+    const { post, delete: destroy, processing } = useForm();
 
     const handleFollow = () => {
-        if (!short.creator_id) return;
-        post(route('followers.store', short.creator_id));
+        if (short.creator.is_following) {
+            destroy(route('followers.destroy', short.creator.id), {
+                preserveScroll: true,
+            });
+        } else {
+            post(route('followers.store', short.creator.id), {
+                preserveScroll: true,
+            });
+        }
     };
 
     return (
         <Card
             className={cn(
-                'relative h-[calc(100vh-8rem)] w-full max-w-md overflow-hidden rounded-[10px] p-4 aspect-[16/9]',
+                'relative aspect-[16/9] h-[calc(100vh-8rem)] w-full max-w-md overflow-hidden rounded-[10px] p-4',
                 short.background,
             )}
         >
@@ -82,7 +96,11 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
                     <div className="flex items-center gap-2">
                         <Avatar>
                             <AvatarImage
-                                src="https://avatar.iran.liara.run/public"
+                                src={
+                                    short.creator.profile_picture
+                                        ? `/${short.creator.profile_picture}`
+                                        : 'https://avatar.iran.liara.run/public'
+                                }
                                 alt=""
                             />
                             <AvatarFallback>
@@ -91,7 +109,10 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
                         </Avatar>
 
                         <div className="flex flex-col">
-                            <Link href={route('user.show', short.creator_id)} className="text-sm hover:underline">
+                            <Link
+                                href={route('user.show', short.creator_id)}
+                                className="text-sm hover:underline"
+                            >
                                 {short.creator.name}
                             </Link>
                             <span className="text-xs text-white/60">
@@ -100,13 +121,34 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
                         </div>
 
                         <Button
-                            onClick={handleFollow}
-                            variant="secondary"
-                            size="sm"
-                            className="ml-2"
-                            disabled={processing}
+                            onClick={() => handleFollow()}
+                            variant={
+                                short.creator.is_following
+                                    ? 'outline'
+                                    : 'default'
+                            }
                         >
-                            {processing ? 'Following…' : 'Follow'}
+                            {processing && short.creator.is_following ? (
+                                <span className="flex items-center gap-2">
+                                    <Spinner />
+                                    Unfollowing...
+                                </span>
+                            ) : processing && !short.creator.is_following ? (
+                                <span className="flex items-center gap-2">
+                                    <Spinner />
+                                    Following...
+                                </span>
+                            ) : short.creator.is_following ? (
+                                <span className="flex items-center gap-2">
+                                    <UserXIcon />
+                                    Unfollow
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2">
+                                    <UserPlusIcon />
+                                    Follow
+                                </span>
+                            )}
                         </Button>
                     </div>
 
@@ -136,4 +178,3 @@ function prettyType(t: string) {
 }
 
 export default ShortCard;
-

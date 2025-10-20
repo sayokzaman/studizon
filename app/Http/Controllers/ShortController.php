@@ -188,6 +188,7 @@ class ShortController extends Controller
 
         [$isCorrect, $normAnswer] = $this->evaluate($short, $input['answer']);
         $points = $isCorrect ? $short->max_points : 0;
+        $user->addCredits($points);
 
         $attempt = ShortAttempt::create([
             'short_id' => $short->id,

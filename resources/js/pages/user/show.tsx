@@ -1,5 +1,6 @@
 import { ClassRoomCard } from '@/components/class-room-card';
 import ShortCard from '@/components/shorts/short-card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -60,11 +61,17 @@ const UserShow = ({ user }: Props) => {
                 <div className="flex flex-col items-center justify-between gap-6 rounded-2xl bg-muted/50 p-6 shadow-md md:flex-row">
                     {/* Profile Image and Basic Info */}
                     <div className="flex items-center gap-5">
-                        <img
-                            src="https://cdn.pixabay.com/photo/2023/07/13/15/06/avatar-8125365_960_720.png"
-                            alt="Prof"
-                            className="h-36 w-36 rounded-full border-4 border-zinc-700 object-cover shadow-md"
-                        />
+                        <Avatar className="size-36">
+                            <AvatarImage
+                                src={
+                                    user.profile_picture
+                                        ? `/${user.profile_picture}`
+                                        : "https://avatar.iran.liara.run/public"
+                                }
+                                alt={user.name}
+                            />
+                            <AvatarFallback>{user.name}</AvatarFallback>
+                        </Avatar>
                         <div className="grid gap-1">
                             <h2 className="text-2xl font-semibold">
                                 {user.name}

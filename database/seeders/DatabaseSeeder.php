@@ -22,7 +22,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminSeeder::class,
             PopulateDatabaseSeeder::class,
-            ShortSeeder::class
+            ShortSeeder::class,
+            NoteSeeder::class,
         ]);
     }
 }

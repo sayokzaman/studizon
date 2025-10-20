@@ -21,6 +21,7 @@ import {
     CoinsIcon,
     LayoutGrid,
     LibraryBig,
+    NotebookPenIcon,
     SquarePlay,
     UserRoundPlusIcon,
     Users,
@@ -49,6 +50,11 @@ const mainNavItems: NavItem[] = [
         title: 'People',
         href: '/people',
         icon: Users,
+    },
+    {
+        title: 'Notes',
+        href: '/notes',
+        icon: NotebookPenIcon,
     },
 ];
 

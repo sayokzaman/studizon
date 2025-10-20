@@ -13,7 +13,7 @@ class DashboardController extends Controller
     {
 
         // today's classes where user is a teacher
-        $myClassesToday = Classroom::where('teacher_id', Auth::id())
+        $myClassesToday = Classroom::with('teacher', 'course')->where('teacher_id', Auth::id())
             ->whereDate('starts_at', today())
             ->get();
 

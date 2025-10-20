@@ -98,7 +98,11 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
                         <div className="flex w-full items-end gap-2">
                             <Avatar className="size-16">
                                 <AvatarImage
-                                    src="https://github.com/shadcn.png"
+                                    src={
+                                        classroom.teacher?.profile_picture
+                                            ? `/${classroom.teacher?.profile_picture}`
+                                            : "https://avatar.iran.liara.run/public"
+                                    }
                                     alt={classroom.teacher?.name}
                                 />
                                 <AvatarFallback>

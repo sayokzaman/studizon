@@ -49,7 +49,11 @@ export default function UserCard({ user }: Props) {
                 <div className="flex justify-between">
                     <Avatar className="size-16">
                         <AvatarImage
-                            src="https://github.com/shadcn.png"
+                            src={
+                                user.profile_picture
+                                    ? `/${user.profile_picture}`
+                                    : 'https://avatar.iran.liara.run/public'
+                            }
                             alt={user.name}
                         />
                         <AvatarFallback>{user.name}</AvatarFallback>

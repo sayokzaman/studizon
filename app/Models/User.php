@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'program_id',
         'credits',
+        'profile_picture',
         'profile_completed',
     ];
 

@@ -1,6 +1,6 @@
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import NotificationDialog from '@/components/notifications-dialog';
+import NotificationDialog from '@/components/notifications-popup';
 import {
     Sidebar,
     SidebarContent,

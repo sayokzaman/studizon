@@ -22,11 +22,11 @@ export default function AuthSimpleLayout({
                             href={home()}
                             className="flex flex-col items-center gap-2 font-medium"
                         >
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
+                            <div className="mb-1 flex h-9 items-center justify-center rounded-md">
                                 <img
                                     src="/logo.png"
                                     alt=""
-                                    className="size-12"
+                                    className="h-12 w-auto object-cover"
                                 />
                             </div>
                             <span className="sr-only">{title}</span>

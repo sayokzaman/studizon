@@ -6,8 +6,13 @@ until php artisan migrate --force; do
   sleep 3
 done
 
-# Optional seeding for non-production environments.
+# Optional production-safe seeding.
 if [ "${RUN_SEEDERS:-false}" = "true" ]; then
+  php artisan db:seed --class=Database\\Seeders\\AdminSeeder --force
+fi
+
+# Optional full seeders for local/dev only (uses factories/Faker).
+if [ "${RUN_FULL_SEEDERS:-false}" = "true" ]; then
   php artisan db:seed --force
 fi
 

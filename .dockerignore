@@ -1,0 +1,12 @@
+node_modules
+vendor
+.git
+.github
+.env
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+npm-debug.log
+yarn-error.log
+pnpm-debug.log

@@ -8,6 +8,7 @@ done
 
 # Optional production-safe seeding.
 if [ "${RUN_SEEDERS:-false}" = "true" ]; then
+  php artisan db:seed --class=Database\\Seeders\\ProductionSeeder --force
   php artisan db:seed --class=Database\\Seeders\\AdminSeeder --force
 fi
 

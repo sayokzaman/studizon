@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { resolveProfilePictureUrl } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, SharedData, User } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
@@ -57,18 +58,16 @@ const UserShow = ({ user }: Props) => {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="mx-auto max-w-7xl p-6">
+            <div className="mx-auto max-w-7xl w-full p-6">
                 {/* Profile Header */}
                 <div className="flex flex-col items-center justify-between gap-6 rounded-2xl bg-muted/50 p-6 shadow-md md:flex-row">
                     {/* Profile Image and Basic Info */}
                     <div className="flex items-center gap-5">
                         <Avatar className="size-36">
                             <AvatarImage
-                                src={
-                                    user.profile_picture
-                                        ? `/${user.profile_picture}`
-                                        : 'https://avatar.iran.liara.run/public'
-                                }
+                                src={resolveProfilePictureUrl(
+                                    user.profile_picture,
+                                )}
                                 alt={user.name}
                             />
                             <AvatarFallback>{user.name}</AvatarFallback>
@@ -212,7 +211,7 @@ const UserShow = ({ user }: Props) => {
 
                 {/* Tabs Section */}
                 <Tabs defaultValue="posts" className="mt-10 w-full">
-                    <TabsList className="mx-auto mb-6 grid w-1/3 grid-cols-3 rounded-xl">
+                    <TabsList className="mx-auto mb-6 grid grid-cols-3 rounded-xl w-full">
                         <TabsTrigger
                             value="posts"
                             className="text-sm md:text-base"

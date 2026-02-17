@@ -46,6 +46,7 @@ export interface User {
     classrooms_count?: number;
     shorts?: Short[];
     shorts_count?: number;
+    notes?: Note[];
     followers?: User[];
     follower_count?: number;
     following?: User[];

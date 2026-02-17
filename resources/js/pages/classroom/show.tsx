@@ -4,6 +4,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
+import {
+    resolveClassroomThumbnailUrl,
+    resolveProfilePictureUrl,
+} from '@/lib/utils';
 import { BreadcrumbItem, SharedData } from '@/types';
 import { ClassRoom } from '@/types/classroom';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
@@ -86,24 +90,20 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
         });
     };
 
-    const randomInt = (min: number, max: number) => {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Classroom - ${classroom.topic}`} />
-            <div className="relative border-b">
+            <div className="relative -mt-16 border-b">
                 <img
-                    src={
-                        classroom.thumbnail_path ||
-                        `/thumbnail-placeholder/${randomInt(1, 6)}.jpg`
-                    }
+                    src={resolveClassroomThumbnailUrl(
+                        classroom.thumbnail_path,
+                        classroom.id,
+                    )}
                     alt={classroom?.topic}
                     className="absolute inset-0 h-full w-full object-cover"
                 />
 
-                <div className="flex h-72 flex-col items-center justify-end bg-accent/30 px-16 py-6 backdrop-blur-xs">
+                <div className="flex h-72 flex-col items-center justify-end bg-accent/30 xl:px-16 px-6 py-6 backdrop-blur-xs sm:h-92">
                     <div className="w-full max-w-7xl">
                         <h3 className="flex items-center gap-2 text-xl font-semibold">
                             <Badge className="font-semibold tracking-wide">
@@ -123,16 +123,14 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
                 </div>
             </div>
 
-            <main className="mx-auto w-full max-w-7xl px-6 py-6">
-                <div className="flex items-center justify-between">
+            <main className="mx-auto w-full max-w-7xl px-6 xl:px-0 py-6">
+                <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
                     <div className="flex items-center gap-6">
-                        <Avatar className="h-20 w-20">
+                        <Avatar className="h-20 w-20 bg-primary">
                             <AvatarImage
-                                src={
-                                    classroom.teacher?.profile_picture
-                                        ? `/${classroom.teacher?.profile_picture}`
-                                        : 'https://avatar.iran.liara.run/public'
-                                }
+                                src={resolveProfilePictureUrl(
+                                    classroom.teacher?.profile_picture,
+                                )}
                                 alt={classroom.teacher?.name}
                             />
                             <AvatarFallback>
@@ -222,8 +220,8 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
                     </div>
                 </div>
 
-                <div className="mt-8 grid grid-cols-3 gap-8">
-                    <div className="flex flex-col items-center justify-center rounded-md border bg-muted/40 p-4">
+                <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-8">
+                    <div className="flex col-span-2 md:col-span-1 flex-col items-center justify-center rounded-md border bg-muted/40 p-4">
                         <p className="text-xl text-muted-foreground">
                             Class Status
                         </p>
@@ -285,8 +283,8 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
 
                 <h3 className="mt-6 text-2xl font-semibold">Overview</h3>
 
-                <div className="flex gap-8">
-                    <div className="mt-4 flex w-2/3 flex-col gap-8">
+                <div className="flex flex-col lg:flex-row gap-8">
+                    <div className="mt-4 flex lg:w-2/3 flex-col gap-8">
                         <div className="rounded-md border bg-muted/40">
                             <h4 className="p-4 text-lg font-semibold">
                                 Description
@@ -366,7 +364,7 @@ const ClassroomShow = ({ classroom, openRatingModal }: Props) => {
                         </div>
                     </div>
 
-                    <div className="mt-4 h-fit w-1/3 rounded-md border bg-muted/40 p-4">
+                    <div className="lg:mt-4 h-fit lg:w-1/3 rounded-md border bg-muted/40 p-4">
                         <div className="flex items-center justify-between border-b pb-2">
                             <p className="text-lg font-semibold">Students</p>
 

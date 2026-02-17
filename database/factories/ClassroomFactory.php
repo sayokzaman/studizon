@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Models\Course;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,21 +18,30 @@ class ClassroomFactory extends Factory
      */
     public function definition(): array
     {
+        $status = $this->faker->randomElement(['scheduled', 'completed', 'cancelled', 'in_progress']);
+        $start = match ($status) {
+            'completed' => $this->faker->dateTimeBetween('-2 months', '-1 day'),
+            'in_progress' => $this->faker->dateTimeBetween('-2 hours', '-10 minutes'),
+            default => $this->faker->dateTimeBetween('now', '+2 months'),
+        };
+
+        $end = (clone $start)->modify('+'.$this->faker->numberBetween(45, 120).' minutes');
+
         return [
             'course_id' => Course::inRandomOrder()->first()->id,
             'teacher_id' => User::inRandomOrder()->first()->id,
             'topic' => $this->faker->sentence(),
             'room_name' => $this->faker->unique()->bothify('???-####'), // has to be unique
-            'is_live' => false,
+            'is_live' => $status === 'in_progress',
             'record' => false,
             'join_link' => '',
             'description' => $this->faker->paragraph(),
             'cost' => $this->faker->numberBetween(0, 100),
             'capacity' => $this->faker->numberBetween(5, 30),
-            'scheduled_date' => $this->faker->date(),
-            'starts_at' => $this->faker->dateTimeThisMonth(),
-            'ends_at' => $this->faker->dateTimeThisMonth(),
-            'status' => 'scheduled',
+            'scheduled_date' => $start->format('Y-m-d'),
+            'starts_at' => $start,
+            'ends_at' => $end,
+            'status' => $status,
             'thumbnail_path' => null,
         ];
     }

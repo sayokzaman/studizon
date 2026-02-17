@@ -8,6 +8,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { resolveProfilePictureUrl } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { Note } from '@/types/note';
 import { useForm, usePage } from '@inertiajs/react';
@@ -82,10 +83,9 @@ const NoteCard = ({ note, setUpdatedNote, onUpdated }: Props) => {
             <div className="mb-2 flex items-center gap-3">
                 <Avatar>
                     <AvatarImage
-                        src={
-                            note.author?.profile_picture ||
-                            'https://avatar.iran.liara.run/public'
-                        }
+                        src={resolveProfilePictureUrl(
+                            note.author?.profile_picture,
+                        )}
                         alt={note.author?.name}
                     />
                     <AvatarFallback>{note.author?.name}</AvatarFallback>

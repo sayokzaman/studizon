@@ -12,6 +12,11 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import {
+    cn,
+    resolveClassroomThumbnailUrl,
+    resolveProfilePictureUrl,
+} from '@/lib/utils';
 import { SharedData, User } from '@/types';
 import { ClassRoom } from '@/types/classroom';
 import { Link, useForm, usePage } from '@inertiajs/react';
@@ -67,25 +72,40 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
         });
     };
 
-    // random value between one to six
-    const randomInt = (min: number, max: number) => {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+    const getBackgroundColor = () => {
+        switch (classroom.status) {
+            case 'scheduled':
+                return 'bg-blue-500 text-white';
+            case 'in_progress':
+                return 'bg-yellow-500 text-white';
+            case 'completed':
+                return 'bg-green-500 text-white';
+            case 'cancelled':
+                return 'bg-red-500 text-white';
+            default:
+                return 'bg-gray-500 text-white';
+        }
     };
 
     return (
-        <Card className="flex flex-col justify-between gap-0 overflow-hidden rounded-2xl p-0 pb-3 shadow transition-all duration-300 hover:scale-101 hover:shadow-2xl">
+        <Card className="flex flex-col justify-between gap-0 overflow-hidden rounded-2xl p-0 pb-3 drop-shadow transition-all duration-300 hover:scale-101 hover:shadow-2xl">
             <CardHeader className="gap-1 px-0">
                 <div className="relative w-full">
                     <img
-                        src={
-                            classroom.thumbnail_path ||
-                            `/thumbnail-placeholder/${randomInt(1, 6)}.jpg`
-                        }
+                        src={resolveClassroomThumbnailUrl(
+                            classroom.thumbnail_path,
+                            classroom.id,
+                        )}
                         alt={classroom.topic}
                         className="h-28 w-full object-cover"
                     />
 
-                    <Badge className="absolute top-2 left-2 z-10 h-fit w-fit">
+                    <Badge
+                        className={cn(
+                            'absolute top-2 left-2 z-10 h-fit w-fit',
+                            getBackgroundColor(),
+                        )}
+                    >
                         <span className="capitalize">{classroom.status}</span>
                     </Badge>
 
@@ -101,13 +121,11 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
                 <div className="-mt-9 flex flex-col gap-1 px-4">
                     <div className="flex justify-between">
                         <div className="flex w-full items-end gap-2">
-                            <Avatar className="size-16">
+                            <Avatar className="size-16 bg-primary">
                                 <AvatarImage
-                                    src={
-                                        classroom.teacher?.profile_picture
-                                            ? `/${classroom.teacher?.profile_picture}`
-                                            : 'https://avatar.iran.liara.run/public'
-                                    }
+                                    src={resolveProfilePictureUrl(
+                                        classroom.teacher?.profile_picture,
+                                    )}
                                     alt={classroom.teacher?.name}
                                 />
                                 <AvatarFallback>
@@ -164,30 +182,33 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
 
             <CardContent className="flex h-full flex-col justify-end px-4">
                 {/* Stats */}
-                <div className="flex items-center justify-center pt-1 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                        <CalendarIcon className="h-4 w-4" />
-                        <span>{formattedDate}</span>
-                    </div>
-                    <span className="mx-2 text-[4px]">⬤</span>
-                    <div className="flex items-center gap-1">
-                        <Clock9Icon className="h-4 w-4" />
-                        <span>
-                            {classroom.start_time.slice(0, 5)}–
-                            {classroom.end_time.slice(0, 5)}
-                        </span>
+                <div className="my-2 py-1.5">
+                    <p className="text-center text-xs">Scheduled For</p>
+                    <div className="flex items-center justify-center pt-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>{formattedDate}</span>
+                        </div>
+                        <span className="mx-2 text-[4px]">⬤</span>
+                        <div className="flex items-center gap-1">
+                            <Clock9Icon className="h-4 w-4" />
+                            <span>
+                                {classroom.start_time.slice(0, 5)}–
+                                {classroom.end_time.slice(0, 5)}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="mt-4 flex flex-col items-center">
-                    <p className="text-xs text-muted-foreground">Capacity</p>
+                <div className="flex flex-col items-center">
+                    <p className="text-xs">Capacity</p>
                     <Progress
                         value={classroom.capacity_filled}
                         max={classroom.capacity}
                         className="mt-1.5 h-1.5 max-w-36"
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
-                        Filled: {classroom.capacity_filled}/{classroom.capacity}
+                        Filled: <span className='text-foreground'>{classroom.capacity_filled}/{classroom.capacity}</span>
                     </p>
                 </div>
             </CardContent>
@@ -212,7 +233,7 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
                     <>
                         <Button
                             onClick={() => handleJoin(classroom.id)}
-                            className="group w-full overflow-hidden"
+                            className="group w-full overflow-hidden bg-emerald-500 text-foreground hover:bg-emerald-600"
                         >
                             <div className="">
                                 <div className="flex translate-y-2.5 items-center justify-center gap-2 transition-all duration-300 group-hover:-translate-y-9 group-hover:opacity-0">
@@ -236,7 +257,7 @@ export const ClassRoomCard: React.FC<Props> = ({ classroom, userProp }) => {
 
                         <Button variant={'secondary'}>
                             <ExternalLinkIcon className="h-4 w-4" />
-                            View Class
+                            Preview
                         </Button>
                     </>
                 )}

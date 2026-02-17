@@ -11,6 +11,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { resolveProfilePictureUrl } from '@/lib/utils';
 import { User } from '@/types';
 import { Link, useForm } from '@inertiajs/react';
 import {
@@ -49,11 +50,7 @@ export default function UserCard({ user }: Props) {
                 <div className="flex justify-between">
                     <Avatar className="size-16">
                         <AvatarImage
-                            src={
-                                user.profile_picture
-                                    ? `/${user.profile_picture}`
-                                    : 'https://avatar.iran.liara.run/public'
-                            }
+                            src={resolveProfilePictureUrl(user.profile_picture)}
                             alt={user.name}
                         />
                         <AvatarFallback>{user.name}</AvatarFallback>

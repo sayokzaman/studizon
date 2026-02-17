@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+import { cn, resolveProfilePictureUrl } from '@/lib/utils';
 import { CodeOutputPayload, Short } from '@/types/short';
 import { Link, useForm } from '@inertiajs/react';
 import {
@@ -96,11 +96,9 @@ const ShortCard = ({ short, onNext, seconds }: Props) => {
                     <div className="flex items-center gap-2">
                         <Avatar>
                             <AvatarImage
-                                src={
-                                    short.creator.profile_picture
-                                        ? `/${short.creator.profile_picture}`
-                                        : 'https://avatar.iran.liara.run/public'
-                                }
+                                src={resolveProfilePictureUrl(
+                                    short.creator.profile_picture,
+                                )}
                                 alt=""
                             />
                             <AvatarFallback>

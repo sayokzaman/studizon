@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, resolveProfilePictureUrl } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { CodeOutputPayload, Short } from '@/types/short';
 import { usePage } from '@inertiajs/react';
@@ -75,11 +75,9 @@ export default function ShortCreateCard({ data, courseName }: Props) {
                     <div className="flex items-center gap-2">
                         <Avatar>
                             <AvatarImage
-                                src={
-                                    user.profile_picture
-                                        ? `/${user.profile_picture}`
-                                        : 'https://avatar.iran.liara.run/public'
-                                }
+                                src={resolveProfilePictureUrl(
+                                    user.profile_picture,
+                                )}
                                 alt=""
                             />
                             <AvatarFallback>{user.name}</AvatarFallback>

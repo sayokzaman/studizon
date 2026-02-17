@@ -2,6 +2,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    resolveClassroomThumbnailUrl,
+    resolveProfilePictureUrl,
+} from '@/lib/utils';
 import { SharedData, User } from '@/types';
 import { ClassRoom } from '@/types/classroom';
 import { Link, usePage } from '@inertiajs/react';
@@ -20,19 +24,15 @@ export const ClassroomDashboardCard: React.FC<Props> = ({
 }) => {
     const { auth } = usePage<SharedData>().props;
     const user = userProp ? userProp : auth.user;
-
-    const randomInt = (min: number, max: number) => {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    };
     return (
         <Card className="flex min-w-xs flex-col justify-between gap-0 overflow-hidden rounded-2xl p-0 pb-3 shadow transition-all duration-300 hover:scale-101 hover:shadow-2xl">
             <CardHeader className="gap-1 px-0">
                 <div className="relative w-full">
                     <img
-                        src={
-                            classroom.thumbnail_path ||
-                            `/thumbnail-placeholder/${randomInt(1, 6)}.jpg`
-                        }
+                        src={resolveClassroomThumbnailUrl(
+                            classroom.thumbnail_path,
+                            classroom.id,
+                        )}
                         alt={classroom.topic}
                         className="h-28 w-full object-cover"
                     />
@@ -56,10 +56,9 @@ export const ClassroomDashboardCard: React.FC<Props> = ({
                         <div className="flex w-full items-end gap-2">
                             <Avatar className="size-16">
                                 <AvatarImage
-                                    src={
-                                        classroom.teacher?.profile_picture ||
-                                        'https://avatar.iran.liara.run/public'
-                                    }
+                                    src={resolveProfilePictureUrl(
+                                        classroom.teacher?.profile_picture,
+                                    )}
                                     alt={classroom.teacher?.name}
                                 />
                                 <AvatarFallback>

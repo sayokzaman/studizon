@@ -41,8 +41,13 @@ export default function Feed({ initial, cursor }: Props) {
                     preserveState: true,
                     only: ['initial', 'cursor'],
                     onSuccess: (page) => {
-                        setItems((prev) => [...prev, ...(page.props.initial as Short[] ?? [])]);
-                        setNextCursor(page.props.cursor as string | null | undefined);
+                        setItems((prev) => [
+                            ...prev,
+                            ...((page.props.initial as Short[]) ?? []),
+                        ]);
+                        setNextCursor(
+                            page.props.cursor as string | null | undefined,
+                        );
                     },
                 },
             );
@@ -64,7 +69,7 @@ export default function Feed({ initial, cursor }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Shorts" />
-            <div className="relative flex h-full items-center justify-center">
+            <div className="relative flex h-full flex-1 w-full items-center justify-center">
                 {items[idx] && (
                     <>
                         {/* <ShortCardAI item={items[idx]} onNext={onNext} /> */}

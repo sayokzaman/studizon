@@ -58,9 +58,9 @@ class NoteController extends Controller
             'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx,txt|max:5120', // 5MB
         ]);
 
-        DB::transaction(function () use ($validated, $request, &$note) {
-            $user = Auth::user();
+        $note = null;
 
+        DB::transaction(function () use ($validated, $request, &$note) {
             // ✅ 2. Create the note
             $note = Note::create([
                 'user_id' => Auth::id(),
@@ -81,13 +81,15 @@ class NoteController extends Controller
                     ]);
                 }
             }
+
+            $note->load('attachments');
         });
 
         // ✅ 4. Return response
         return redirect()->route('notes.index')->with([
             'success' => true,
             'message' => 'Note created successfully',
-            'note' => $note->load('attachments'),
+            'note' => $note,
         ]);
     }
 

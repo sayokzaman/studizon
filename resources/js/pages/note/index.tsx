@@ -1,4 +1,5 @@
 import NoteCard from '@/components/note-card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,16 +17,20 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { useFetchList } from '@/hooks/use-fetch-list';
 import AppLayout from '@/layouts/app-layout';
+import { resolveProfilePictureUrl } from '@/lib/utils';
+import { SharedData } from '@/types';
 import { Course } from '@/types/course';
 import { Note } from '@/types/note';
-import { Head, useForm } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { Head, useForm, usePage } from '@inertiajs/react';
+import { FileText, Paperclip } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Props = {
     notes: Note[];
 };
 
 const NotesIndex = ({ notes: initialNotes }: Props) => {
+    const { user } = usePage<SharedData>().props.auth;
     const [notes, setNotes] = useState<Note[]>(initialNotes);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
@@ -39,6 +44,7 @@ const NotesIndex = ({ notes: initialNotes }: Props) => {
     const [searchCourse, setSearchCourse] = useState('');
     const [openCoursesPopover, setOpenCoursesPopover] = useState(false);
     const widthRef = useRef<HTMLButtonElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const { data: courses, loading: courseLoading } = useFetchList<
         Course,
@@ -55,6 +61,25 @@ const NotesIndex = ({ notes: initialNotes }: Props) => {
         attachments: [] as File[],
     });
 
+    const attachmentPreviews = useMemo(
+        () =>
+            form.data.attachments.map((file) => ({
+                isImage: file.type.startsWith('image/'),
+                url: file.type.startsWith('image/')
+                    ? URL.createObjectURL(file)
+                    : '',
+            })),
+        [form.data.attachments],
+    );
+
+    useEffect(() => {
+        return () => {
+            attachmentPreviews.forEach((preview) => {
+                if (preview.url) URL.revokeObjectURL(preview.url);
+            });
+        };
+    }, [attachmentPreviews]);
+
     const handleCourseSelect = (course: Course) => {
         setSelectedCourse(course);
         form.setData('course_id', course.id);
@@ -66,6 +91,7 @@ const NotesIndex = ({ notes: initialNotes }: Props) => {
         if (!e.target.files) return;
         const fileArray = Array.from(e.target.files);
         form.setData('attachments', [...form.data.attachments, ...fileArray]);
+        e.target.value = '';
     };
 
     const removeFile = (index: number) => {
@@ -140,16 +166,32 @@ const NotesIndex = ({ notes: initialNotes }: Props) => {
         <AppLayout breadcrumbs={[{ title: 'Notes', href: '/notes' }]}>
             <Head title="Notes" />
 
-            <main className="flex flex-col gap-4 p-4">
-                {/* Create Note Button */}
-                <div className="mb-4 flex justify-end">
-                    <Button onClick={() => setOpenModal(true)}>
-                        Create New Note
-                    </Button>
-                </div>
-
+            <main className="p-4">
                 {/* Notes Feed */}
                 <div className="flex flex-col gap-4">
+                    <div className="relative mx-auto w-full max-w-md rounded-2xl border bg-card p-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <Avatar>
+                                <AvatarImage
+                                    src={resolveProfilePictureUrl(
+                                        user?.profile_picture,
+                                    )}
+                                    alt={user?.name}
+                                />
+                                <AvatarFallback>{user?.name}</AvatarFallback>
+                            </Avatar>
+
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start rounded-full"
+                                onClick={() => setOpenModal(true)}
+                            >
+                                What's on your mind?
+                            </Button>
+
+                            <div></div>
+                        </div>
+                    </div>
                     {notes.map((note, idx) => {
                         if (idx === notes.length - 1) {
                             return (
@@ -194,14 +236,58 @@ const NotesIndex = ({ notes: initialNotes }: Props) => {
                 {/* Create Note Modal */}
                 {openModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="relative w-full max-w-lg rounded-2xl bg-card p-6">
-                            <h2 className="mb-4 text-lg font-semibold">
-                                Create New Note
-                            </h2>
+                        <div className="relative flex w-full max-w-lg flex-col gap-3 rounded-2xl bg-card px-5 py-4">
+                            <div className="border-b pb-2">
+                                <h2 className="text-center text-lg font-semibold">
+                                    Create Note
+                                </h2>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <Avatar>
+                                    <AvatarImage
+                                        src={resolveProfilePictureUrl(
+                                            user?.profile_picture,
+                                        )}
+                                        alt={user?.name}
+                                    />
+                                    <AvatarFallback>
+                                        {user?.name}
+                                    </AvatarFallback>
+                                </Avatar>
+
+                                <div className="flex flex-col">
+                                    <span className="font-semibold">
+                                        {user?.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {new Date().toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
                             <form
                                 onSubmit={handleSubmit}
                                 className="flex flex-col gap-4"
                             >
+                                {/* Description */}
+                                <textarea
+                                    value={form.data.description}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'description',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Write your note..."
+                                    className="w-full rounded-md border px-3 py-2 text-lg"
+                                    rows={4}
+                                />
+                                {form.errors.description && (
+                                    <p className="text-xs text-red-500">
+                                        {form.errors.description}
+                                    </p>
+                                )}
+
                                 {/* Course selector */}
                                 <Popover
                                     open={openCoursesPopover}
@@ -262,61 +348,87 @@ const NotesIndex = ({ notes: initialNotes }: Props) => {
                                         </Command>
                                     </PopoverContent>
                                 </Popover>
-
-                                {/* Description */}
-                                <textarea
-                                    value={form.data.description}
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'description',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="Write your note..."
-                                    className="w-full rounded-md border px-3 py-2 text-sm"
-                                    rows={4}
-                                />
-                                {form.errors.description && (
+                                {form.errors.course_id && (
                                     <p className="text-xs text-red-500">
-                                        {form.errors.description}
+                                        {form.errors.course_id}
                                     </p>
                                 )}
 
                                 {/* Attachments */}
                                 <div className="flex flex-col gap-2">
                                     <input
+                                        ref={fileInputRef}
                                         type="file"
                                         multiple
                                         onChange={handleFilesChange}
+                                        className="hidden"
                                     />
-                                    <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-fit"
+                                        onClick={() =>
+                                            fileInputRef.current?.click()
+                                        }
+                                    >
+                                        <Paperclip className="h-4 w-4" />
+                                        Add files
+                                    </Button>
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                         {form.data.attachments.map(
-                                            (file, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="relative rounded-md border bg-muted-foreground/10 p-1 text-xs"
-                                                >
-                                                    {file.name}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            removeFile(idx)
-                                                        }
-                                                        className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white"
+                                            (file, idx) => {
+                                                const preview =
+                                                    attachmentPreviews[idx];
+
+                                                return (
+                                                    <div
+                                                        key={`${file.name}-${idx}`}
+                                                        className="relative overflow-hidden rounded-md border bg-muted-foreground/10 text-xs"
                                                     >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ),
+                                                        {preview?.isImage ? (
+                                                            <img
+                                                                src={
+                                                                    preview.url
+                                                                }
+                                                                alt={file.name}
+                                                                className="h-24 w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex h-24 flex-col items-center justify-center gap-1 px-2 text-center text-muted-foreground">
+                                                                <FileText className="h-4 w-4" />
+                                                                <span className="line-clamp-2 break-all">
+                                                                    {file.name}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {preview?.isImage && (
+                                                            <div className="line-clamp-1 border-t bg-card px-2 py-1 text-muted-foreground">
+                                                                {file.name}
+                                                            </div>
+                                                        )}
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                removeFile(idx)
+                                                            }
+                                                            className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-[10px] text-white"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                );
+                                            },
                                         )}
                                     </div>
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex justify-end gap-2">
+                                <div className="grid grid-cols-2 gap-2">
                                     <Button
                                         type="button"
-                                        variant="outline"
+                                        variant="destructive"
                                         onClick={() => setOpenModal(false)}
                                     >
                                         Cancel

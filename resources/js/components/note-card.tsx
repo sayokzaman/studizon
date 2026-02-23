@@ -15,17 +15,17 @@ import { useForm, usePage } from '@inertiajs/react';
 import {
     ChevronDown,
     ChevronUp,
+    Download,
     Heart,
     MessageSquare,
     MoreHorizontal,
-    Share,
 } from 'lucide-react';
 import { useState } from 'react';
 
 type Props = {
     note: Note;
-    setUpdatedNote: (note: Note) => void;
-    onUpdated: (note: Note) => void;
+    setUpdatedNote?: (note: Note) => void;
+    onUpdated?: (note: Note) => void;
 };
 
 const NoteCard = ({ note, setUpdatedNote, onUpdated }: Props) => {
@@ -172,7 +172,7 @@ const NoteCard = ({ note, setUpdatedNote, onUpdated }: Props) => {
                     className="flex items-center gap-1"
                     onClick={() => handleDownloadAll(note.id)}
                 >
-                    <Share className="h-4 w-4" /> Download
+                    <Download className="h-4 w-4" /> Download
                 </Button>
             </div>
 
@@ -183,7 +183,12 @@ const NoteCard = ({ note, setUpdatedNote, onUpdated }: Props) => {
                     open={editModalOpen}
                     onClose={() => setEditModalOpen(false)}
                     onUpdated={(updatedNote: Note) => {
-                        setUpdatedNote({ ...updatedNote });
+                        if (setUpdatedNote) {
+                            setUpdatedNote({ ...updatedNote });
+                        }
+                        if (onUpdated) {
+                            onUpdated(updatedNote);
+                        }
                         Object.assign(note, updatedNote);
                         setEditModalOpen(false);
                     }}
@@ -222,13 +227,6 @@ const NoteCard = ({ note, setUpdatedNote, onUpdated }: Props) => {
                     </div>
                 </div>
             )}
-
-            <EditNoteModal
-                note={note}
-                open={editModalOpen}
-                onClose={() => setEditModalOpen(false)}
-                onUpdated={(updatedNote: Note) => onUpdated(updatedNote)}
-            />
         </div>
     );
 };

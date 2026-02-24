@@ -28,7 +28,7 @@ Route::get('/', function () {
 // });
 // Route::get('/api/livekit/token', [LivekitController::class, 'token']);
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'guest_read_only'])->group(function () {
     Route::get('/setup', [ProfileSetupController::class, 'index'])->name('setup');
     Route::post('/setup', [ProfileSetupController::class, 'store'])->name('setup.store');
 

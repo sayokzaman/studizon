@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
 import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
+import { route } from 'ziggy-js';
 
 interface LoginProps {
     status?: string;
@@ -101,6 +102,22 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                 Sign up
                             </TextLink>
                         </div>
+
+                        <Button
+                            asChild
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            tabIndex={6}
+                        >
+                            <Link
+                                href={route('guest.login')}
+                                method="post"
+                                as="button"
+                            >
+                                Continue as guest
+                            </Link>
+                        </Button>
                     </>
                 )}
             </Form>
